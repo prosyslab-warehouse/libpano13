@@ -62,6 +62,7 @@ int panoFlattenTIFF(fullPath *fullPathImages, int counterImageFiles, fullPath *o
 extern int quietFlag;
 
 int  panoPSDCreate(  fullPath *fullPathImages, int, fullPath*, pano_flattening_parms*);
+int  panoCreateLayeredPSD(  fullPath *fullPathImages, int, fullPath*, pano_flattening_parms*);
 
 int panoCreatePanorama(fullPath ptrImageFileNames[], int counterImageFiles, fullPath *panoFileName, fullPath *scriptFileName);
 void ARGtoRGBAImage(Image *im);
@@ -82,5 +83,8 @@ int panoCroppingMain(int argc,char *argv[], int operation, char *version,char *u
 
 void panoPrintImage(char *msg, Image *im);
 
+#ifndef min
+   #define min(a,b) ((a) <= (b) ? (a) : (b))
+#endif
 
 #endif

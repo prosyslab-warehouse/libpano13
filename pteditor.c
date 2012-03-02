@@ -100,7 +100,7 @@ JNIEXPORT void JNICALL Java_pteditor_CGetImageRow
 		if( pix == NULL ) return;
 		if( pano->bitsPerPixel == 64 ){
 			int x;
-			UCHAR *p = *(pano->data) + pano->bytesPerLine * nrow,*q = (UCHAR*)pix;
+			unsigned char *p = *(pano->data) + pano->bytesPerLine * nrow,*q = (unsigned char*)pix;
 			for(x=0; x<pano->width; x++, p+=8, q+=4){
 #ifdef PT_BIGENDIAN
 				q[0] = p[0]; q[1] = p[2]; q[2] = p[4]; q[3] = p[6];
@@ -113,7 +113,7 @@ JNIEXPORT void JNICALL Java_pteditor_CGetImageRow
 			memcpy( pix, *(pano->data) + pano->bytesPerLine * nrow, pano->width * sizeof(jint));				
 #else
 			int x;
-			UCHAR *p = *(pano->data) + pano->bytesPerLine * nrow,*q = (UCHAR*)pix;
+			unsigned char *p = *(pano->data) + pano->bytesPerLine * nrow,*q = (unsigned char*)pix;
 			for(x=0; x<pano->width; x++, p+=4, q+=4){
 				q[0] = p[3];q[1] = p[2];q[2] = p[1];q[3] = p[0];
 			}
@@ -328,7 +328,7 @@ JNIEXPORT void JNICALL Java_pteditor_CSetImageRow
 		pano->bitsPerPixel = 32;
 		pano->bytesPerLine = pano->width  * pano->bitsPerPixel/8;
 		pano->dataSize = pano->height * pano->bytesPerLine;
-		pano->data = (UCHAR**) mymalloc( pano->dataSize * sizeof(UCHAR) );
+		pano->data = (unsigned char**) mymalloc( pano->dataSize * sizeof(unsigned char) );
 	}
 
 	if( pano->data == NULL) return;

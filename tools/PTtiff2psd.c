@@ -59,10 +59,12 @@
                          "\t-s\t\t\tStack them\n"\
                          "\t-q\t\t\tQuiet run\n"\
                          "\t-r\t\t\tReverse layers\n"\
+                         "\t-8\t\t\tReduce image to 8bit per channel\n"\
+                         "\t-B\t\t\tForce Big, PSB file format\n"\
                          "\t-h\t\t\tShow this message\n"\
                          "\n"
 
-#define PT_TIFF2PSD_VERSION "PTtiff2psd Version " VERSION ", based on PTstitcher by Helmut Dersch, rewritten by Daniel M German\n"
+#define PT_TIFF2PSD_VERSION "PTtiff2psd Version " VERSION ", based on code by Helmut Dersch, rewritten by Daniel M German and Jim Watters\n"
 
 #define DEFAULT_OUTPUT_FILENAME "merged.psd"
 
@@ -91,11 +93,11 @@ int main(int argc,char *argv[])
     printf(PT_TIFF2PSD_VERSION);
 
     if (StringtoFullPath(&outputFilename, DEFAULT_OUTPUT_FILENAME)) {
-	PrintError("Not a valid pathnamefor output filename  [%s]", DEFAULT_OUTPUT_FILENAME);
-	return(-1);
+      PrintError("Not a valid pathnamefor output filename  [%s]", DEFAULT_OUTPUT_FILENAME);
+      return(-1);
     }
 
-    while ((opt = getopt(argc, argv, "o:sb:qhfmr")) != -1) {
+    while ((opt = getopt(argc, argv, "o:sb:qhfmr8B")) != -1) {
 
 	// o and f -> set output file
 	// h       -> help
@@ -127,6 +129,12 @@ int main(int argc,char *argv[])
 	case 'r':
 	    reverseLayers = 1;
 	    break;
+  case '8':
+    flatteningParms.force8bit = 1;
+    break;
+  case 'B':
+    flatteningParms.forceBig = 1;
+    break;
 	case 'q':
 	    ptQuietFlag = 1;
 	    break;
@@ -195,7 +203,8 @@ int main(int argc,char *argv[])
 	Progress(_initProgress, tempString);
     }
 
-    if (panoPSDCreate(ptrInputFiles, filesCount, &outputFilename, &flatteningParms) != 0) {
+    //if (panoPSDCreate(ptrInputFiles, filesCount, &outputFilename, &flatteningParms) != 0) {
+    if (panoCreateLayeredPSD(ptrInputFiles, filesCount, &outputFilename, &flatteningParms) != 0) {
 	PrintError("Error while creating PSD file");
 	return -1;
     }

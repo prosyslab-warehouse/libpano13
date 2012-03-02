@@ -37,14 +37,14 @@
 
 
 int readplanarTIFF(Image * im, TIFF * tif);
-void RGBAtoARGB(UCHAR * buf, int width, int bitsPerPixel);
-void ARGBtoRGBA(UCHAR * buf, int width, int bitsPerPixel);
+void RGBAtoARGB(uint8_t * buf, int width, int bitsPerPixel);
+void ARGBtoRGBA(uint8_t * buf, int width, int bitsPerPixel);
 int readtif(Image * im, TIFF * tif);
 
 
 int readplanarTIFF(Image * im, TIFF * tif)
 {
-    UCHAR *buf;
+    uint8_t *buf;
     int32_t y;
     short SamplesPerPixel;
 
@@ -57,7 +57,7 @@ int readplanarTIFF(Image * im, TIFF * tif)
         im->bytesPerLine = im->bytesPerLine * 3 / 4;
     }
 
-    buf = (UCHAR *) malloc((size_t) TIFFScanlineSize(tif));
+    buf = (uint8_t *) malloc((size_t) TIFFScanlineSize(tif));
     if (buf == NULL)
     {
         PrintError("Not enough memory");
@@ -111,7 +111,7 @@ int readtif(Image * im, TIFF * tif)
         return -1;
     }
 
-    im->data = (UCHAR **) hdl_raster;
+    im->data = (uint8_t **) hdl_raster;
 
     if (tPhotoMetric == PHOTOMETRIC_RGB && config == PLANARCONFIG_CONTIG)
     {
@@ -317,7 +317,7 @@ int writeCroppedTIFF(Image * im, fullPath * sfile, CropInfo * crop_info)
 {
     char string[512];
     TIFF *tif;
-    UCHAR *buf;
+    uint8_t *buf;
     unsigned int y;
     size_t bufsize;
 
@@ -436,7 +436,7 @@ int writeCroppedTIFF(Image * im, fullPath * sfile, CropInfo * crop_info)
     bufsize = TIFFScanlineSize(tif);
     if ((uint32_t)bufsize < im->bytesPerLine)
         bufsize = im->bytesPerLine;
-    buf = (UCHAR *) malloc(bufsize);
+    buf = (uint8_t *) malloc(bufsize);
     if (buf == NULL)
     {
         PrintError("Not enough memory");
@@ -464,14 +464,14 @@ int writeTIFF(Image * im, fullPath * sfile)
 
 
 
-void RGBAtoARGB(UCHAR * buf, int width, int bitsPerPixel)
+void RGBAtoARGB(uint8_t * buf, int width, int bitsPerPixel)
 {
     int x;
     switch (bitsPerPixel)
     {
     case 32:
         {
-            UCHAR pix;
+            uint8_t pix;
             for (x = 0; x < width; x++, buf += 4)
             {
                 pix = buf[3];
@@ -484,7 +484,7 @@ void RGBAtoARGB(UCHAR * buf, int width, int bitsPerPixel)
         break;
     case 64:
         {
-            USHORT *bufs = (USHORT *) buf, pix;
+            uint16_t *bufs = (uint16_t *) buf, pix;
             for (x = 0; x < width; x++, bufs += 4)
             {
                 pix = bufs[3];
@@ -511,14 +511,14 @@ void RGBAtoARGB(UCHAR * buf, int width, int bitsPerPixel)
     }
 }
 
-void ARGBtoRGBA(UCHAR * buf, int width, int bitsPerPixel)
+void ARGBtoRGBA(uint8_t * buf, int width, int bitsPerPixel)
 {
     int x;
     switch (bitsPerPixel)
     {
     case 32:
         {
-            UCHAR pix;
+            uint8_t pix;
             for (x = 0; x < width; x++, buf += 4)
             {
                 pix = buf[0];
@@ -531,7 +531,7 @@ void ARGBtoRGBA(UCHAR * buf, int width, int bitsPerPixel)
         break;
     case 64:
         {
-            USHORT *bufs = (USHORT *) buf, pix;
+            uint16_t *bufs = (uint16_t *) buf, pix;
             for (x = 0; x < width; x++, bufs += 4)
             {
                 pix = bufs[0];
@@ -782,7 +782,7 @@ int panoTiffReadScanLineFullSize(pano_Tiff * file, void *buffer, int row)
 
     if (panoTiffRowInsideROI(file, row)) {
         if (TIFFReadScanline
-            (file->tiff, (UCHAR *)(buffer) + panoTiffXOffset(file) * bytesPerPixel,
+            (file->tiff, (uint8_t *)(buffer) + panoTiffXOffset(file) * bytesPerPixel,
              row - panoTiffYOffset(file), 0) != 1) {
             PrintError("Error reading row %d in tiff file", row);
             return FALSE;
@@ -813,7 +813,7 @@ int panoTiffWriteScanLineFullSize(pano_Tiff * file, void *buffer, int row)
 
     if (panoTiffRowInsideROI(file, row)) {
         if (TIFFWriteScanline
-            (file->tiff, (UCHAR *)(buffer) + panoTiffXOffset(file) * bytesPerPixel,
+            (file->tiff, (uint8_t *)(buffer) + panoTiffXOffset(file) * bytesPerPixel,
              row - panoTiffYOffset(file), 0) != 1) {
             PrintError("Error writing row %d in tiff file", row);
             return FALSE;
@@ -1141,7 +1141,7 @@ int panoTiffSetImageProperties(pano_Tiff * file)
 
 int panoTiffReadPlannar(Image * im, pano_Tiff * tif)
 {
-    UCHAR *buf;
+    uint8_t *buf;
     uint32 row;
     short samplesPerPixel;
     int bytesRead;
@@ -1636,13 +1636,13 @@ int panoTiffVerifyAreCompatible(fullPath * tiffFiles, int numberImages,
     // Open TIFFs
 
     firstFile = panoTiffOpen(tiffFiles[0].name);
-    firstCropInfo = &firstFile->metadata.cropInfo;
-
 
     if (firstFile == NULL) {
         PrintError("Unable to read tiff file %s", tiffFiles[0].name);
         return FALSE;
     }
+
+    firstCropInfo = &firstFile->metadata.cropInfo;
 
     // Compare the metadata of the current file with each of the other ones
     for (currentImage = 1; currentImage < numberImages; currentImage++) {

@@ -1393,7 +1393,7 @@ void MyTransForm( TrformStr *TrPtr, fDesc *fD, int color, int imageNum)
 						int xn = xc, yn = yc;
 						if( xn < 0 ) xn = 0; //  -1  crashes Windows
 						if( yn < 0 ) yn = 0; //  -1  crashes Windows
-						if( *((USHORT*)(src + yn * BytesPerLine + BytesPerPixel * xn)) < 32768 )
+						if( *((uint16_t*)(src + yn * BytesPerLine + BytesPerPixel * xn)) < 32768 )
 							valid = FALSE;
 						}
 						break;
@@ -2259,7 +2259,7 @@ void transForm_aa( TrformStr *TrPtr, fDesc *fD,fDesc *finvD, int color, int imag
 						int xn = xc, yn = yc;
 						if( xn < 0 ) xn = 0; //  -1  crashes Windows
 						if( yn < 0 ) yn = 0; //  -1  crashes Windows
-						if( *((USHORT*)(src + yn * BytesPerLine + BytesPerPixel * xn)) == 0 )
+						if( *((uint16_t*)(src + yn * BytesPerLine + BytesPerPixel * xn)) == 0 )
 							valid = FALSE;
 						}
 						break;
