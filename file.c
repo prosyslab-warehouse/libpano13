@@ -2849,7 +2849,7 @@ int panoImageRead(Image * im, fullPath * sfile)
     printf("Filename %s\n", sfile->name);
     ext = strrchr(sfile->name, '.');
     if (ext == NULL || strlen(ext) < 4 || strlen(ext) > 5) {
-        PrintError("Unsupported file format [%s]: must have extension JPG, PNG, TIF, BMP, PPM, PSD, PSB, or HDR", sfile);
+        PrintError("Unsupported file format [%s]: must have extension JPG, JPEG, PNG, TIF, TIFF, BMP, PPM, PSD, PSB, or HDR", sfile);
         return 0;
     }
     ext++;
@@ -2861,7 +2861,7 @@ int panoImageRead(Image * im, fullPath * sfile)
     if (strcmp(extension, "ppm") == 0) {
         return panoPPMRead(im, sfile);
     } 
-    else if (strcmp(extension, "jpg") == 0) {
+    else if (strcmp(extension, "jpg") == 0 || strcmp(extension, "jpeg") == 0) {
         return panoJPEGRead(im, sfile);
     }
     else if (strcmp(extension, "tif") == 0 || strcmp(extension, "tiff") == 0) {
@@ -2885,7 +2885,7 @@ int panoImageRead(Image * im, fullPath * sfile)
         return panoHDRRead(im, sfile );
     }
     else {
-        PrintError("Unsupported file format [%s]: must have extension JPG, PNG, TIF, BMP, PPM, PSD, PSB, or HDR", sfile);
+        PrintError("Unsupported file format [%s]: must have extension JPG, JPEG, PNG, TIF, TIFF, BMP, PPM, PSD, PSB, or HDR", sfile);
         return FALSE;
     }
     // it should never get here
