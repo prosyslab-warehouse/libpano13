@@ -73,7 +73,7 @@ endif()
 #  finding the wxWidgets distributions of those packages on Windows.
 IF(WIN32)
   ADD_DEFINITIONS(-D__Win__)
-  OPTION(BUILD_DLL "Build dynamic libpano 13" OFF)
+  OPTION(BUILD_DLL "Build dynamic libpano 13" ON)
   OPTION(BUILD_WINGUI "Build with Windows GUI, otherwise the information is printed to shell/cmd.exe" OFF)
   IF(MSVC)
     set(win_c "tools/compat_win32/getopt.c")
