@@ -52,7 +52,7 @@ IF(WIN32)
   set(CMAKE_INSTALL_PREFIX "${SOURCE_BASE_DIR}/libpano13" CACHE PATH "Install prefix for libpano")
 ENDIF(WIN32)
 
-set(HUGIN_SHARED OFF)
+SET(CMAKE_DEBUG_POSTFIX d)
 
 include(CheckIncludeFiles)
 
