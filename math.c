@@ -2310,18 +2310,19 @@ int biplane_distance ( double width, double b, void* params )
 int triplane_erect		( double x_dest,double  y_dest, double* x_src, double* y_src, void* params )
 {
 	double x,offset;
-	if(fabs(x_dest / mp->distance)> mp->pn->precomputedValue[0] + DEG_TO_RAD(89))
+	const double x0 = x_dest / mp->distance;
+	if(fabs(x0)> mp->pn->precomputedValue[0] + DEG_TO_RAD(89))
 	{
 		*x_src = 0;
 		*y_src = 0;
 		return 0;
 	};
-	if(x_dest < -mp->pn->precomputedValue[0] / 2)
+	if(x0 < -mp->pn->precomputedValue[0] / 2)
 	{
 		x=x_dest + mp->pn->precomputedValue[0] * mp->distance;
-		offset = - mp->pn->precomputedValue[1];
+		offset = -2.0 * mp->pn->precomputedValue[1];
 	}
-	else if (x_dest < mp->pn->precomputedValue[0] / 2)
+	else if (x0 < mp->pn->precomputedValue[0] / 2)
 	{
 		x=x_dest;
 		offset=0;
@@ -2329,7 +2330,7 @@ int triplane_erect		( double x_dest,double  y_dest, double* x_src, double* y_src
 	else
 	{
 		x=x_dest - mp->pn->precomputedValue[0] * mp->distance;
-		offset = + mp->pn->precomputedValue[1];
+		offset = +2.0 * mp->pn->precomputedValue[1];
 	}
 	rect_erect(x,y_dest,x_src,y_src,&mp->distance);
 	*x_src += offset;
