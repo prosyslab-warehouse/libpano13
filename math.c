@@ -2359,7 +2359,10 @@ int triplane_erect		( double x_dest,double  y_dest, double* x_src, double* y_src
 		x=x_dest - mp->pn->precomputedValue[0] * mp->distance;
 		offset = +2.0 * mp->pn->precomputedValue[1];
 	}
-	rect_erect(x,y_dest,x_src,y_src,&mp->distance);
+	if(!rect_erect(x,y_dest,x_src,y_src,&mp->distance))
+	{
+		return 0;
+	};
 	*x_src += offset;
 	return 1;
 }
@@ -2388,7 +2391,10 @@ int erect_triplane		( double x_dest,double  y_dest, double* x_src, double* y_src
 		x=x_dest - 2 * mp->pn->precomputedValue[1];
 		offset = + mp->pn->precomputedValue[0];
 	}
-	erect_rect(x,y_dest,x_src ,y_src,&mp->distance);
+	if(!erect_rect(x,y_dest,x_src ,y_src,&mp->distance))
+	{
+		return 0;
+	};
 	*x_src += offset * mp->distance;
 	return 1;
 }
