@@ -487,11 +487,15 @@ int panoProjectionFeaturesQuery(int projection, pano_projection_features *featur
 	case PANO_FORMAT_BIPLANE:
         features->maxVFOV = 179;
         features->maxHFOV = 359;
-		features->numberOfParameters = 1;
+		features->numberOfParameters = 2;
 		features->parm[0].name = "alpha";
 		features->parm[0].minValue=1;
 		features->parm[0].maxValue=179;
 		features->parm[0].defValue=45;
+		features->parm[1].name = "corners";
+		features->parm[1].minValue = 0;
+		features->parm[1].maxValue = 1;
+		features->parm[1].defValue = 0;
 		break;
 	case PANO_FORMAT_TRIPLANE:
 	    features->maxVFOV = 179;

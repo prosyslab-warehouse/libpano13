@@ -2250,18 +2250,29 @@ int biplane_erect		( double x_dest,double  y_dest, double* x_src, double* y_src,
 		*y_src = 0;
 		return 0;
 	}
-	if(x_dest<0)
+	if (fabs(x_dest) < mp->pn->precomputedValue[2])
 	{
-		x = x_dest + mp->pn->precomputedValue[0] * mp->distance;
-		offset = -mp->pn->precomputedValue[1];
+		// we are in the range of the corner, use cyclindrical projection
+		return pano_erect(x_dest, y_dest, x_src, y_src, &mp->distance);
 	}
 	else
 	{
-		x = x_dest - mp->pn->precomputedValue[0] * mp->distance;
-		offset = mp->pn->precomputedValue[1];
-	}
-	rect_erect(x,y_dest,x_src,y_src,&mp->distance);
-	*x_src += offset;
+		if (x_dest < 0)
+		{
+			x = x_dest + mp->pn->precomputedValue[0] * mp->distance;
+			offset = -mp->pn->precomputedValue[1];
+		}
+		else
+		{
+			x = x_dest - mp->pn->precomputedValue[0] * mp->distance;
+			offset = mp->pn->precomputedValue[1];
+		};
+		if(!rect_erect(x, y_dest, x_src, y_src, &mp->distance))
+		{
+			return 0;
+		};
+		*x_src += offset;
+	};
 	return 1;
 }
 
@@ -2275,6 +2286,11 @@ int erect_biplane		( double x_dest,double  y_dest, double* x_src, double* y_src,
 		*y_src = 0;
 		return 0;
 	}
+	if (fabs(x_dest) < mp->pn->precomputedValue[2])
+	{
+		// we are in the range of the corner, use cyclindrical projection
+		return erect_pano(x_dest, y_dest, x_src, y_src, &mp->distance);
+	}
 	if(x_dest<0)
 	{
 		x=x_dest + mp->pn->precomputedValue[1];
@@ -2285,7 +2301,10 @@ int erect_biplane		( double x_dest,double  y_dest, double* x_src, double* y_src,
 		x=x_dest - mp->pn->precomputedValue[1];
 		offset = mp->pn->precomputedValue[0]; 
 	} 
-	erect_rect(x,y_dest,x_src,y_src,&mp->distance);
+	if(!erect_rect(x,y_dest,x_src,y_src,&mp->distance))
+	{
+		return 0;
+	};
 	*x_src += offset * mp->distance;
 	return 1;
 }
@@ -2295,15 +2314,23 @@ int biplane_distance ( double width, double b, void* params )
 {
 	if(mp->pn->formatParamCount==0)
 	{
-		mp->pn->formatParamCount = 1;
+		mp->pn->formatParamCount = 2;
 		mp->pn->formatParam[0] = 45;
+		mp->pn->formatParam[1] = 0;
+	};
+	if (mp->pn->formatParamCount == 1)
+	{
+		mp->pn->formatParamCount = 2;
+		mp->pn->formatParam[1] = 0;
 	};
 	mp->pn->formatParam[0]= max( min(mp->pn->formatParam[0], 179), 1);
+	mp->pn->formatParam[1] = mp->pn->formatParam[1] > 0.1 ? 1 : 0;
 
-	mp->pn->precomputedCount = 2;
+	mp->pn->precomputedCount = 3;
 	mp->pn->precomputedValue[0] = DEG_TO_RAD(mp->pn->formatParam[0]) / 2;  // angle in rad
 	mp->distance = (double) width / (2.0 * (tan(mp->pn->precomputedValue[0])+tan(b/2.0 - mp->pn->precomputedValue[0])));
 	mp->pn->precomputedValue[1]=mp->distance*tan(mp->pn->precomputedValue[0]);  // offset
+	mp->pn->precomputedValue[2] = mp->pn->formatParam[1] * mp->pn->precomputedValue[0] * mp->distance;  // for round corners
 	return 1;
 }
 
