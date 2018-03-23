@@ -35,9 +35,7 @@ discovered by Bruno Postle and Thomas Sharpless in December
 
 #include <math.h>
 
-#define PI 3.1415926535897932384626433832795
-#define D2R( x ) ((x) * PI / 180 )
-#define R2D( x ) ((x) * 180 / PI )
+#include <filter.h>
 
 int panini_general_toSphere	( double* lon, double* lat, 
 							  double h,  double v, 
@@ -71,9 +69,14 @@ int panini_general_toSphere	( double* lon, double* lat,
   /* squeeze */
 	if( q > 0 ){
 	/* hard squeeze */
-		t = atan( v * cl );
-		t = q * (t - *lat);
-		*lat += t;
+		t = fabs(cl);
+		if (t > EPSLN)
+			t = q / t;
+		t += 1 - q;
+		if (fabs(t) < EPSLN)
+			*lat = 0;
+		else
+			*lat = atan(S*v / t);
 	} else if( q < 0 ){
 	/* soft squeeze version 2 */
 		double cc = cos(0.92 * *lon) - 1;
@@ -106,8 +109,8 @@ int panini_general_toPlane	( double lon, double lat,
 		*v *= 1 + ss * q * cc;
 	} else if( q > 0 ){
 	/* hard squeeze */
-		t = cos(lon);
-		if( t > 0.01 ) 
+		t = fabs(cos(lon));
+		if( t > EPSLN ) 
 			t = *v / t;
 		*v += q * (t - *v);
 	}
