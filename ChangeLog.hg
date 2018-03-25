@@ -1,4 +1,93 @@
-2014-02-12 17:57 +0100  tmodes  <tmodes>  (071273ed3a44 [tip])
+2018-03-25 10:36 +0100  Bruno Postle  <bruno@postle.net>  (f5ac8cc3aa91 [tip])
+
+	* configure.ac:
+	Update version to 2.9.20
+
+2018-03-25 10:35 +0100  Bruno Postle  <bruno@postle.net>  (e5632a455634)
+
+	* bootstrap:
+	Support latest automake
+
+2018-03-25 10:34 +0100  Bruno Postle  <bruno@postle.net>  (0a71a9f8a45a)
+
+	* tests/simpleTiff16/temp.txt: deleted file.
+	* tests/simpleTiff16/Makefile.am, tests/simpleTiff16/temp.txt:
+	Don't ship test output file
+
+2018-03-23 17:19 +0100  tmodes  <tmodes@users.sf.net>  (5b23ce4acaf4)
+
+	* PaniniGeneral.c:
+	Fixes inverse transformation of Panini General
+
+2018-03-11 08:30 +0100  tmodes  <tmodes@users.sf.net>  (f220884e22e3)
+
+	* math.c:
+	Triplane: Check more return codes instead of ignoring it
+
+2018-03-11 08:30 +0100  tmodes  <tmodes@users.sf.net>  (1eaaec6809a2)
+
+	* math.c, queryfeature.c:
+	Biplane: Added new parameter for rounded corner
+
+2018-03-05 17:26 +0100  tmodes  <tmodes@users.sf.net>  (1a3e1f817145)
+
+	* math.c:
+	Fixes image->pano transformation for triplane projection
+
+2018-03-05 17:26 +0100  tmodes  <tmodes@users.sf.net>  (793506b19f1f)
+
+	* CMakeLists.txt:
+	Add debug postfix for debug libraries
+
+2018-02-07 17:54 +0100  tmodes  <tmodes@users.sf.net>  (3ad2089ab924)
+
+	* CMakeLists.txt:
+	Windows: Make building shared library (DLL) default
+
+2017-09-29 16:49 +0200  tmodes  <tmodes@users.sf.net>  (977a50b2a634)
+
+	* file.c:
+	Recognize also jpeg file extension [1681022]
+
+2017-09-29 16:48 +0200  tmodes  <tmodes@users.sf.net>  (e3808b4f9a78)
+
+	* CMakeLists.txt:
+	Fixes compilation with Mingw Mingw has already getopt, no need for
+	our file
+
+2017-01-02 18:34 +0100  tmodes  <tmodes@users.sf.net>  (20434c36b266)
+
+	* tools/panoinfo.c:
+	Fixes path separator for cross compiling for Windows
+
+2016-12-30 13:21 +0100  tmodes  <tmodes@users.sf.net>  (9fb6fd19947a)
+
+	* math.c:
+	Don't take shortcut in setup_panini_general This breaks calculation
+	of ppg->distance parameter which is needed in stack calculations.
+	This fixes hang during line control points calculations [1016258]
+
+2016-12-30 13:19 +0100  tmodes  <tmodes@users.sf.net>  (83e0c78ad594)
+
+	* math.c:
+	Updates for MSVC 2015
+
+2016-09-17 16:12 +0200  tmodes  <tmodes@users.sf.net>  (9d16f4a39c36)
+
+	* math.c:
+	Comment out double assignment
+
+2015-12-06 13:06 +0100  tmodes  <tmodes@users.sf.net>  (d1ca12b2146b)
+
+	* pt_stdint.h:
+	Fix for MSVC 2015
+
+2014-04-23 00:31 +0100  Bruno Postle  <bruno@postle.net>  (7339b1014e88)
+
+	* ChangeLog.hg:
+	update changelog
+
+2014-02-12 17:57 +0100  tmodes  <tmodes>  (071273ed3a44)
 
 	* math.c:
 	Fixes condition introduced in last commit (Matthew Petroff)
