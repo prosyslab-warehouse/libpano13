@@ -1,6 +1,5 @@
 EXTRA_DIST = 060520_3398.TIF \
 	     CMakeLists.txt \
-	     temp.txt \
              ChangeLog simple.txt README.TXT
 
 SUBDIRS = reference
