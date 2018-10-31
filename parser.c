@@ -2479,7 +2479,7 @@ char *panoParserFindOLine(char *script, int index)
 
         result = calloc(length + 1, 1);
         if (result == NULL) {
-            PrintError("Not enought memory");
+            PrintError("Not enough memory");
             return NULL;
         } else {
             strncpy(result, ptr, length);

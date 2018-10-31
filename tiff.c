@@ -617,7 +617,7 @@ int panoTiffGetCropInformation(pano_Tiff * file)
 	    return FALSE;
 	}
 	if (TIFFGetField(file->tiff, TIFFTAG_YRESOLUTION, &y_resolution) == 0) {
-	    PrintError("Cropped image contains XPosition and YPosition, but it does not contain Y Resultion. "
+	    PrintError("Cropped image contains XPosition and YPosition, but it does not contain Y Resolution. "
 		       "Report to developers you think this is a bug");
 	    return FALSE;
 	}
