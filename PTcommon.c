@@ -52,7 +52,9 @@
 #ifndef _MSC_VER
 #include <unistd.h>
 #else
+#if _MSC_VER<1900
 #define isnan _isnan
+#endif
 #include "tools/compat_win32/getopt.h"
 #endif
 
