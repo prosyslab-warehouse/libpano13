@@ -1,4 +1,14 @@
-2018-03-25 10:36 +0100  Bruno Postle  <bruno@postle.net>  (f5ac8cc3aa91 [tip])
+2018-09-06 17:45 +0200  tmodes  <tmodes@users.sf.net>  (d71285db01f0 [tip])
+
+	* version.h:
+	Bump up some more version numbers
+
+2018-03-25 10:45 +0100  Bruno Postle  <bruno@postle.net>  (415deb81168f)
+
+	* ChangeLog, ChangeLog.hg:
+	Update ChangeLog for
+
+2018-03-25 10:36 +0100  Bruno Postle  <bruno@postle.net>  (f5ac8cc3aa91)
 
 	* configure.ac:
 	Update version to 2.9.20

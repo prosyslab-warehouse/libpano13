@@ -1548,6 +1548,7 @@ void nextWord( register char* word, char** ch )
         c++;
         while( *c != '\"' && *c != 0 )
             *word++ = *c++;
+        if(0 != *c)
         c++; // to eat last character
     }
     else
