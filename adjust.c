@@ -76,7 +76,7 @@ void panoAdjustPrintMakeParams(char *msg, struct MakeParams *mp, Image *im)
 {
     printf("-------------%s\n", msg);
     if (mp != NULL) {
-        printf("distnace %f\n", mp->distance);
+        printf("distance %f\n", mp->distance);
         printf("shear[0] %f\n", mp->shear[0]);
         printf("shear[1] %f\n", mp->shear[1]);
         printf("rot[0] %f\n", mp->rot[0]);
