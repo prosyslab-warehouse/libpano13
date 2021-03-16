@@ -2910,6 +2910,16 @@ int panoFileOutputNamesCreate(fullPath *ptrOutputFiles, int filesCount, char *ou
         }
         strcat(outputPrefix, DEFAULT_PREFIX_NUMBER_FORMAT);
     }
+    else {
+        // TODO: sanitize outputPrefix, only a single format specifier %??d or %??i
+        // is allowed, all other should be escaped
+        // until this is implemented refuse to process further if prefix string
+        // contains a percentage sign to prevent string vulnerability in 
+        // sprintf(outputFilename, outputPrefix ...) below
+        PrintError("Output prefix must not contain a percentage sign");
+        return 0;
+    }
+
 
     for (i =0; i< filesCount ; i++) {
         sprintf( outputFilename, outputPrefix, i );

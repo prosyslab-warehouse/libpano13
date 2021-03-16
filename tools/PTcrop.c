@@ -36,7 +36,7 @@
 
 #define PT_CROP_USAGE "PTuncrop [options] <inputFiles+>\n\n" \
     "Options:\n"                                                        \
-    "\t-p <prefix>\tPrefix for output files (defaults to " DEFAULT_PREFIX "%%4d)\n"	\
+    "\t-p <prefix>\tPrefix for output files (defaults to " DEFAULT_PREFIX ")\n"	\
     "\t-f\t\tForce processing: Overwrite output files if they exists (use with care)\n"      \
     "\t-x\t\tDelete source files (use with care)\n"\
     "\t-q\t\tQuiet run\n"\
