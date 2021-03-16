@@ -1,4 +1,35 @@
-2018-09-06 17:45 +0200  tmodes  <tmodes@users.sf.net>  (d71285db01f0 [tip])
+2021-03-16 17:23 +0100  tmodes  <tmodes>  (f02459498cb4 [tip])
+
+	* file.c, tools/PTcrop.c:
+	Prevent string vulnerability by refusing prefix strings with
+	percentage sign
+
+2020-12-13 15:37 +0100  tmodes  <tmodes@users.sf.net>  (2e9ee0a5e32f)
+
+	* Merge
+
+2020-12-13 15:36 +0100  tmodes  <tmodes@users.sf.net>  (282b57fc22cb)
+
+	* adjust.c:
+	Fixes typo (spotted by A. Metzler)
+
+2020-12-11 21:51 +0000  Bruno Postle  <bruno@postle.net>  (a042ec0cb9bf)
+
+	* ChangeLog.hg, parser.c:
+	Fix reading beyond end of string
+	https://bugs.launchpad.net/bugs/1906996 (Florian Königstein)
+
+2019-10-31 15:40 +0100  tmodes  <tmodes@users.sf.net>  (9f43f0980d29)
+
+	* PTcommon.c:
+	Use default isnan on new MSVC compilers instead
+
+2018-10-31 13:04 +0100  tmodes  <tmodes@users.sf.net>  (82996ca476c5)
+
+	* parser.c, tiff.c:
+	Fixes 2 typos (Patch by Andreas Metzler)
+
+2018-09-06 17:45 +0200  tmodes  <tmodes@users.sf.net>  (d71285db01f0)
 
 	* version.h:
 	Bump up some more version numbers
@@ -515,26 +546,6 @@
 
 2012-03-02 23:19 +0000  Bruno Postle  <bruno@postle.net>  (0c73d8794377)
 
-	* LocalDefs.props, libpano.vcxproj, sys_compat.h,
-	tests/panoAutomatePSDtest.pl, tests/simpleTiff2psd/CMakeLists.txt,
-	tests/simpleTiff2psd/reference/simpleStitch_crop_1_layer.psd,
-	tests/simpleTiff2psd/reference/simpleStitch_crop_2_layer.psd,
-	tests/simpleTiff2psd/reference/simpleStitch_uncrop_1_layer.psd,
-	tests/simpleTiff2psd/reference/simpleStitch_uncrop_2_layer.psd,
-	tests/simpleTiff2psd/reference/simpleTiff16-16-_uncrop_1_layer.psd,
-	tests/simpleTiff2psd/reference/simpleTiff16-16-_uncrop_2_layer.psd,
-	tests/simpleTiff2psd/tests/simpleStitch_crop_1_layer.psd,
-	tests/simpleTiff2psd/tests/simpleStitch_crop_2_layer.psd,
-	tests/simpleTiff2psd/tests/simpleStitch_uncrop_1_layer.psd,
-	tests/simpleTiff2psd/tests/simpleStitch_uncrop_2_layer.psd,
-	tests/simpleTiff2psd/tests/simpleTiff16-16-_uncrop_1_layer.psd,
-	tests/simpleTiff2psd/tests/simpleTiff16-16-_uncrop_2_layer.psd,
-	tests/tiff2psdTest.bat, tools/PTAInterpolate.vcxproj,
-	tools/PTOptimizer.vcxproj, tools/PTblender.vcxproj,
-	tools/PTcrop.vcxproj, tools/PTinfo.vcxproj, tools/PTmasker.vcxproj,
-	tools/PTmender.vcxproj, tools/PTroller.vcxproj,
-	tools/PTtiff2psd.vcxproj, tools/PTtiffdump.vcxproj,
-	tools/PTuncrop.vcxproj: new file.
 	* .hgignore, CMakeLists.txt, ChangeLog, png.c, pteditor.c,
 	tests/CMakeLists.txt:
 	merged PSD branch
@@ -5821,12 +5832,13 @@
 2004-11-22 19:24 +0000  dwilkins42  <dwilkins42>  (c8a481723ae9 <libpano>)
 
 	* build/.cvsignore, build/Makefile.am, build/README,
-	build/win32/.cvsignore, build/win32/Makefile.am, build/win32
-	/compile-resource, build/win32/lt-compile-resource: new file.
+	build/win32/.cvsignore, build/win32/Makefile.am,
+	build/win32/compile-resource, build/win32/lt-compile-resource: new
+	file.
 	* Makefile.am, build/.cvsignore, build/Makefile.am, build/README,
-	build/win32/.cvsignore, build/win32/Makefile.am, build/win32
-	/compile-resource, build/win32/lt-compile-resource, configure.ac,
-	m4/ax_check_java.m4, tools/Makefile.am:
+	build/win32/.cvsignore, build/win32/Makefile.am,
+	build/win32/compile-resource, build/win32/lt-compile-resource,
+	configure.ac, m4/ax_check_java.m4, tools/Makefile.am:
 	Fixes for mingw and cygwin build. Note that cygwin build still has a
 	few problems.
 
