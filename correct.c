@@ -746,7 +746,7 @@ static int getFrame( Image *im, int *xoff, int *yoff, int width, int height, int
 		if( skip == (int)ceil(dx/50.0) ){
 			if( showprogress )
 			{	
-				sprintf( percent, "%d", (int) (xul * 100)/(dx>0?dx:1));
+				snprintf( percent, sizeof(percent)-1, "%d", (int) (xul * 100)/(dx>0?dx:1));
 				if( ! Progress( _setProgress, percent ) )
 				{
 					return -1;	

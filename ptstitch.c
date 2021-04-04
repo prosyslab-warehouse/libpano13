@@ -283,7 +283,7 @@ int panoStitchCreateMaskMapFiles(fullPath * inputFiles, fullPath * maskFiles,
     // for each image, create merging mask and save to temporal file
     for (index = 0; index < numberImages; index++) {
 
-        sprintf(tempString, "%d", index * 100 / numberImages);
+        snprintf(tempString, sizeof(tempString)-1, "%d", index * 100 / numberImages);
 
         // Do progress
         if (ptQuietFlag == 0) {
@@ -728,7 +728,7 @@ int panoStitchCreateAlphaChannels(fullPath * masksNames,
         // Update progress
         if (ptQuietFlag == 0) {
             if (fullSizeRowIndex == (fullSizeRowIndex / 20) * 20) {
-                sprintf(tempString, "%lu",
+                snprintf(tempString, sizeof(tempString)-1, "%lu",
                         (long unsigned) fullSizeRowIndex * 100 /
                         fullImageHeight);
                 if (Progress(_setProgress, tempString) == 0) {
@@ -852,7 +852,7 @@ int panoStitchReplaceMasks(fullPath * inputFiles, fullPath * outputFiles,
     for (i = 0; i < numberImages; i++) {
         fullPath withAlphaChannel;
 
-        sprintf(tempString, "%d", 100 * i / numberImages);
+        snprintf(tempString, sizeof(tempString)-1, "%d", 100 * i / numberImages);
 
         if (ptQuietFlag == 0) {
             if (Progress(_setProgress, tempString) == 0) {

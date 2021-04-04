@@ -450,7 +450,7 @@ int ParseScript( char* script, AlignInfo *gl )
                         break;
                     case 'n':           // Set filename
                         nextWord( buf, &li );
-                        sprintf( im->name, "%s", buf );
+                        snprintf( im->name, sizeof(im->name)-1, "%s", buf );
                         break;
                     case 'm':  // Frame
                         li++;
@@ -1848,11 +1848,11 @@ static int ReadImageDescription( Image *imPtr, stBuf *sPtr, char *line )
             break;
         case '+':   nextWord( buf, &ch );
             PrintError("Obsolete + parameter is ignored in image description");
-            sprintf( sBuf.srcName, "%s", buf);
+            snprintf( sBuf.srcName, sizeof(sBuf.srcName)-1, "%s", buf);
             break;
         case '-':   nextWord( buf, &ch );
             PrintError("Obsolete - parameter is ignored in image description");
-            sprintf( sBuf.destName, "%s", buf );
+            snprintf( sBuf.destName, sizeof(sBuf.destName)-1, "%s", buf );
             break;
             
             

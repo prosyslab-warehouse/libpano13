@@ -64,7 +64,7 @@ int panoTimeToStrWithTimeZone(char *sTime, int len, struct tm  *time)
     // %z or %Z  in strftime produces a name of the time zone not a numeric value.
     if (strftime(sTime, len, "%H%M%S", time) != 0) {
         _get_timezone(&lZone);
-        sprintf(sZone, "%+03d%02d", -lZone/60/60, lZone/60%60);
+        snprintf(sZone, sizeof(sZone)-1, "%+03d%02d", -lZone/60/60, lZone/60%60);
         strncat(sTime, sZone, len-1); // Copy at most len -1
         // so we can force the end character to be null
         sTime[len-1] = 0;

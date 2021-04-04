@@ -172,7 +172,7 @@ void  RunLMOptimizer( OptInfo	*o)
 				LM.info = 8;
 		totalfev += LM.nfev;
 
-		sprintf( (char*) o->message, "# %s%d function evaluations\n# %s\n# final rms error %g units\n",
+		snprintf( (char*) o->message, sizeof(o->message)-1, "# %s%d function evaluations\n# %s\n# final rms error %g units\n",
 									warning, totalfev, infmsg[LM.info],
 									sqrt(sumSquared(LM.fvec,LM.m)/LM.m) * sqrt((double)FUNCS_PER_CP));
 

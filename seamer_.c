@@ -100,7 +100,7 @@ void _SetDistance ( Image* im, Image* pano, PTRect *theRect, int showprogress )
 		if( showprogress && skip == 5 )
 		{
 			
-			sprintf( percent, "%d", (int) (dist* 100)/255) ;
+			snprintf( percent, 8, "%d", (int) (dist* 100)/255) ;
 			if( ! Progress( _setProgress, percent ) )
 						return;
 			skip = 0;
@@ -210,7 +210,7 @@ void _SetDistanceImage ( Image* im, Image* pano, PTRect *theRect, int showprogre
 		if( showprogress && skip == 5 )
 		{
 			
-			sprintf( percent, "%d", (int) (dist* 100)/255) ;
+			snprintf( percent, 8, "%d", (int) (dist* 100)/255) ;
 			if( ! Progress( _setProgress, percent ) )
 						return;
 			skip = 0;

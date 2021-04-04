@@ -190,7 +190,7 @@ void noisefilter( Image *dest, Image *src )
 }
 
 
-#define UPDATE_PROGRESS_CONVOLUTION			prog += delta; sprintf( percent, "%d", prog );		\
+#define UPDATE_PROGRESS_CONVOLUTION			prog += delta; snprintf( percent, 7, "%d", prog );		\
 											if( ! Progress( _setProgress, percent ) )			\
 											{													\
 												TrPtr->success = 0; goto _fconvolution_exit;	\
@@ -280,7 +280,7 @@ _fconvolution_exit:
 
 	
 
-#define UPDATE_PROGRESS_WIENER				prog += delta; sprintf( percent, "%d", prog );		\
+#define UPDATE_PROGRESS_WIENER				prog += delta; snprintf( percent, 7, "%d", prog );		\
 											if( ! Progress( _setProgress, percent ) )			\
 											{													\
 												TrPtr->success = 0; goto _fwiener_exit;			\
@@ -760,7 +760,7 @@ static void invWindowFunction( double *im, int width, int height, double frame)
 }
 */
 
-#define UPDATE_PROGRESS_ANTIALIAS		prog += delta; sprintf( percent, "%d", prog );		\
+#define UPDATE_PROGRESS_ANTIALIAS		prog += delta; snprintf( percent, 7, "%d", prog );		\
 											if( ! Progress( _setProgress, percent ) )			\
 											{													\
 												TrPtr->success = 0; goto _antialias_exit;	\

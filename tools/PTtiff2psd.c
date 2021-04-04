@@ -201,7 +201,7 @@ int main(int argc,char *argv[])
 
     if (!ptQuietFlag) {
 	char tempString[MAX_PATH_LENGTH + 40];
-	sprintf(tempString, "Creating output file %s", outputFilename.name);
+	snprintf(tempString, sizeof(tempString)-1, "Creating output file %s", outputFilename.name);
 	Progress(_initProgress, tempString);
     }
 

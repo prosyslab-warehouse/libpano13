@@ -172,7 +172,7 @@ int main(int argc,char *argv[])
 	        right_retVal = InterpolateImageFile( &sourcefile1, &tempFile1, &ainf, 1 );
 
 			//Create a useful output name, and composite left/right triangles
-			sprintf(outfile.name, "%s_%.3d_%.2d.tif", outfile_prefix.name, (int)(s * 100), ++outputCtr);
+			snprintf(outfile.name, sizeof(outfile.name)-1, "%s_%.3d_%.2d.tif", outfile_prefix.name, (int)(s * 100), ++outputCtr);
 			
 			//a value of 1, indicates no interpolation happened (no triangles in image)
 			//0 indicates success

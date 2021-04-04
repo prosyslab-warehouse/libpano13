@@ -2171,7 +2171,7 @@ int fcnPano(int m, int n, double x[], double fvec[], int *iflag)
                 }
                 result = sqrt( result/ (double)m ) * sqrt((double)fcnPanoNperCP); // to approximate total distance vs dx, dy
 
-                sprintf( message,"Strategy %d\nAverage (rms) distance between Controlpoints \nafter %d iteration(s): %25.15g units", getFcnPanoNperCP(), numIt,result);//average);
+                snprintf( message, sizeof(message)-1, "Strategy %d\nAverage (rms) distance between Controlpoints \nafter %d iteration(s): %25.15g units", getFcnPanoNperCP(), numIt,result);//average);
                 numIt += 1; // 10;
                 if( !infoDlg ( _setProgress,message ) )
                         *iflag = -1;
@@ -2937,7 +2937,7 @@ void writeControlPoints( controlPoint *cp,char* cdesc )
         for(i=0; i<NUMPTS && cp[i].num[0] != -1; i++)
         {
                 //sprintf( line, "c n%d N%d x%d y%d X%d Y%d\n", cp[i].num[0], cp[i].num[1], 
-                sprintf( line, "c n%d N%d x%lf y%lf X%lf Y%lf\n", cp[i].num[0], cp[i].num[1], 
+                snprintf( line, sizeof(line)-1, "c n%d N%d x%lf y%lf X%lf Y%lf\n", cp[i].num[0], cp[i].num[1], 
                                                                                                            cp[i].x[0], cp[i].y[0],
                                                                                                            cp[i].x[1], cp[i].y[1]);
                 strcat( cdesc, line );

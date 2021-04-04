@@ -112,7 +112,7 @@ void  PrintErrorIntern(char* fmt, va_list ap){
 
 	char message[257];
 	
-	vsprintf(message, fmt, ap);
+	vsnprintf(message, sizeof(message)-1, fmt, ap);
 	
 #ifdef HasJava
 	if( JavaUI )
@@ -572,7 +572,7 @@ void 	myfree( void** Hdl )						// free Memory, use Handles
 void showScript( fullPath* scriptFile )
 {
 	char cmd[ MAX_PATH_LENGTH + 32 ];
-	sprintf( cmd, "Notepad \"%s\"", scriptFile->name );
+	snprintf( cmd, sizeof(cmd)-1, "Notepad \"%s\"", scriptFile->name );
 	WinExec( cmd , SW_SHOWNORMAL );
 }
 
