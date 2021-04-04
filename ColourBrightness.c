@@ -41,8 +41,7 @@
 #include "pttiff.h"
 
 #ifdef WIN32
-#ifdef _MSC_VER
-
+#if defined _MSC_VER && _MSC_VER < 1900
 // MSVC doesn't support round()
 //#define round(x) ( (int) (x+0.5) )
 #define round(x) (int)(x)
