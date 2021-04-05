@@ -109,8 +109,7 @@ char *panoParseVariable(char *buf, char *li, int lineNum, int *indirectVar, doub
         li++; // point to next character
         nextWord( buf, &li );
         if( sscanf( buf, "%d", indirectVar ) != 1 ) {                                       
-            PrintError("Syntax error in script: Line %d\nCould not assign variable %s", li-1,
-                       lineNum);
+            PrintError("Syntax error in script: Line %d\nCould not assign variable %s", lineNum, li-1);
             return NULL;
         }
         (*indirectVar)+=2; //its offset should be increased by 2... arghh
@@ -118,8 +117,7 @@ char *panoParseVariable(char *buf, char *li, int lineNum, int *indirectVar, doub
         nextWord( buf, &li );
 
         if( sscanf( buf, " %lf", var ) != 1 ) {                                       
-            PrintError("Syntax error in script: Line %d\nCould not assign variable %s", li-1,
-                       lineNum);
+            PrintError("Syntax error in script: Line %d\nCould not assign variable %s", lineNum, li-1);
             return NULL;
         }
     }
@@ -1612,7 +1610,7 @@ int numLines( char* script, char first )
 #undef  MY_SSCANF
 #define MY_SSCANF( str, format, ptr )       if( sscanf( str, format, ptr ) != 1 )   \
     {                               \
-        PrintError("Syntax error in script: Could read value for variable");\
+        PrintError("Syntax error in script: Could not read value for variable");\
         return -1;                          \
     }
 
@@ -1961,7 +1959,7 @@ static int ReadImageDescription( Image *imPtr, stBuf *sPtr, char *line )
             ch++;
         break;
         default:
-            printf("REturning...........\n");
+            printf("Returning...........\n");
             PrintError("Illegal token in adjust line [%c]  rest of line [%s]", *ch, ch);
             return -1;
         }
