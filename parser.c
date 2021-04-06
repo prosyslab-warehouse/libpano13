@@ -135,7 +135,7 @@ int ParseScript( char* script, AlignInfo *gl )
     // Variables used by parser
     
     char                *li, line[LINE_LENGTH], *ch ,*lineStart, buf[LINE_LENGTH];
-    int                 lineNum = 0;
+    int                 lineNum = 1;
     int                 i,k;
 
 
@@ -194,10 +194,11 @@ int ParseScript( char* script, AlignInfo *gl )
 
     
     while( *ch != 0 ) {
-        lineNum++;
-        
-        while(*ch == '\n')
+        while(*ch == '\n' && *ch != 0)
+        {
             ch++;
+            lineNum++;
+        };
         lineStart = ch;
         
         nextLine( line, &ch );
