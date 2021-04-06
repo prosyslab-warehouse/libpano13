@@ -435,7 +435,7 @@ set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Library for manipulating panoramic images
 set(CPACK_COMPONENTS_ALL_IN_ONE_PACKAGE 1)
 #set(CPACK_COMPONENTS_ALL libraries tools headers doc)
 
-find_package(GnuTar QUIET)
+find_package(GNUTAR QUIET)
 if(GNUTAR_FOUND)
   #message(STATUS "GNUTAR_VERSION_STRING = ${GNUTAR_VERSION_STRING}")
   add_custom_target(dist
