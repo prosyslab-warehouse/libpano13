@@ -2062,7 +2062,7 @@ static int ReadPanoramaDescription( Image *imPtr, stBuf *sPtr, char *line )
         ch++;
         break;
         default:
-        PrintError("Illegal token in 'p'-line [%d] [%c] [%s]", *ch, *ch, ch);
+        PrintError("Illegal token in 'p'-line [%c] [%s]", *ch, ch);
         ch++;
         break;
         }
