@@ -96,7 +96,7 @@ void  RunLMOptimizer( OptInfo	*o)
 	{
 		char msgx[200];
 		warning	= "Warning: Number of Data Points is smaller than Number of Variables to fit.\n";
-		sprintf (msgx,"You have too few control points (%d) or too many parameters (%d).  Strange values may result!",o->numData,LM.n);
+		snprintf (msgx, sizeof(msgx)-1, "You have too few control points (%d) or too many parameters (%d).  Strange values may result!",o->numData,LM.n);
 		PrintError(msgx);
 	}
 	
