@@ -194,7 +194,7 @@ int ParseScript( char* script, AlignInfo *gl )
 
     
     while( *ch != 0 ) {
-        while(*ch == '\n' && *ch != 0)
+        while(*ch == '\n')
         {
             ch++;
             lineNum++;
