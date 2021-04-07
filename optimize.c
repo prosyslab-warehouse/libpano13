@@ -271,7 +271,8 @@ void  RunBROptimizer ( OptInfo	*o, double minStepWidth)
 
 int	AllocateLMStruct( struct LMStruct *LM )
 {
-	int i,k;
+	int i;
+	int64_t j, k;
 	
 
 	if( LM->n <= 0 || LM->m <= 0 || LM->n > LM->m )
@@ -295,7 +296,7 @@ int	AllocateLMStruct( struct LMStruct *LM )
 	LM->wa2 	= (double*) malloc(  LM->n * sizeof( double )); 		
 	LM->wa3 	= (double*) malloc(  LM->n * sizeof( double )); 		
 	LM->wa4 	= (double*) malloc(  LM->m * sizeof( double )); 		
-	LM->fjac 	= (double*) malloc(  LM->m  * LM->n * sizeof( double ));
+	LM->fjac 	= (double*) malloc(  (int64_t)LM->m  * (int64_t)LM->n * sizeof( double ));
 
 	if( LM->ipvt == NULL ||  LM->x    == NULL 	|| LM->fvec == NULL || LM->diag == NULL || 
 		LM->qtf  == NULL ||  LM->wa1  == NULL 	|| LM->wa2  == NULL || LM->wa3  == NULL || 
@@ -319,9 +320,9 @@ int	AllocateLMStruct( struct LMStruct *LM )
 		LM->fvec[i] = LM->wa4[i] = 0.0;
 	}
 
-	k = LM->m * LM->n;
-	for( i=0; i<k; i++)
-			LM->fjac[i] = 0.0;
+	k = (int64_t)LM->m * (int64_t)LM->n;
+	for( j=0; j<k; j++)
+			LM->fjac[j] = 0.0;
 	
 	return 0;
 }
