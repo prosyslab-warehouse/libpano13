@@ -921,7 +921,7 @@ void WriteResults( char* script, fullPath *sfile,  AlignInfo *g, double ds( int 
 
     panoLocaleSave;
 
-    hres = (char**) mymalloc( strlen(script) + g->numIm * 600 + g->numPts * 200 + 10000 ); // Do we ever need more?
+    hres = (char**) mymalloc( strlen(script) + (size_t)(g->numIm) * 1000 + (size_t)(g->numPts) * 200 + 10000 ); // Do we ever need more?
     if( hres == NULL )
     {
         PrintError("Not enough memory to create resultfile");
