@@ -47,6 +47,7 @@ ELSE(HUGIN_BASE_DIR)
   set(CMAKE_MODULE_PATH ${SOURCE_BASE_DIR}/hugin/CMakeModules)
 ENDIF(HUGIN_BASE_DIR)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/build/CMakeModules")
 
 IF(WIN32)
   set(CMAKE_INSTALL_PREFIX "${SOURCE_BASE_DIR}/libpano13" CACHE PATH "Install prefix for libpano")
@@ -117,6 +118,13 @@ INCLUDE_DIRECTORIES(${ZLIB_INCLUDE_DIR})
 INCLUDE_DIRECTORIES(${PNG_INCLUDE_DIR})
 
 set(_common_libs ${TIFF_LIBRARIES} ${ZLIB_LIBRARIES} ${JPEG_LIBRARIES} ${PNG_LIBRARIES})
+
+# Sparse or dense Levenberg Marquardt
+OPTION(USE_SPARSE_LEVMAR "Use Sparse Levenberg Marquardt algorithm instead of dense Levenberg Marquardt algorithm" OFF)
+IF(USE_SPARSE_LEVMAR)
+  FIND_PACKAGE(SUITESPARSE REQUIRED)
+  LIST(APPEND _common_libs ${SUITESPARSE_LIBRARIES})
+ENDIF()
 
 #
 # Check build type and set options accordingly
@@ -233,7 +241,6 @@ set(pano13_src
 	hdrfile.c
 	jpeg.c
 	jpegicc.c
-	lmdif.c
 	math.c
 	metadata.c
 	morpher.c
@@ -263,6 +270,15 @@ set(pano13_src
 )
 # We have some header files at top source level now
 include_directories(${CMAKE_SOURCE_DIR})
+
+IF(USE_SPARSE_LEVMAR)
+  LIST(APPEND pano13_hdr levmar.h)
+  LIST(APPEND pano13_src levmar.c)
+  ADD_DEFINITIONS(-DUSE_SPARSE_LEVENBERG_MARQUARDT)
+  INCLUDE_DIRECTORIES(${SUITESPARSE_INCLUDE_DIRS})
+ELSE()
+  LIST(APPEND pano13_src lmdif.c)
+ENDIF()
 
 if(NOT WIN32)
   # Create and install shared library on non-windows

@@ -44,6 +44,19 @@
 #include <float.h>
 #include <assert.h>
 #include "PTcommon.h"
+#ifdef USE_SPARSE_LEVENBERG_MARQUARDT
+#include "levmar.h"
+/* the sparse Levenberg Marquardt needs some more variables
+   for backward compatibility add them here and not to the public headers
+   because they are only used in function findJacobiNonzeroPattern */
+struct SparseOptVars {
+    optVars n;
+    int nn[24];
+    int nnz;
+};
+typedef struct SparseOptVars SparseOptVars;
+static SparseOptVars* sparseOptInfo;
+#endif 
 
 #define C_FACTOR        100.0
 
@@ -2113,6 +2126,389 @@ void forceFcnPanoReinitAvgFov() { // applies to next call to fcnPano
         needInitialAvgFov = 1;
 }
 
+#ifdef USE_SPARSE_LEVENBERG_MARQUARDT
+void heapsort_int(int* arr, size_t arr_size)
+{
+    size_t i, c, root;
+    int temp;
+
+    for (i = 1; i < arr_size; i++) {
+        c = i;
+        do {
+            root = (c - 1) / 2;
+            if (arr[root] < arr[c])   /* to create MAX arr array */ {
+                temp = arr[root];
+                arr[root] = arr[c];
+                arr[c] = temp;
+            }
+            c = root;
+        } while (0 != c);
+    }
+
+    for (i = arr_size; 0 != i; ) {
+        temp = arr[0];
+        arr[0] = arr[--i];    /* swap max element with rightmost leaf element */
+        arr[i] = temp;
+        root = 0;
+        do {
+            c = 2 * root + 1;    /* left node of root element */
+            if (c + 1 < i && arr[c] < arr[c + 1])
+                c++;
+           if (c < i && arr[root] < arr[c])    /* again rearrange to max arr array */ {
+                temp = arr[root];
+                arr[root] = arr[c];
+                arr[c] = temp;
+            }
+            root = c;
+        } while (c < i);
+    }
+}
+
+int findJacobiNonzeroPattern(int nobs, int nvars, splm_crsm * jac)
+{
+    int i, j, k, n, im1, im2, i1, i2, nincp;
+    int64_t *colidx, *rowptr;
+
+    j = 0;
+    for (i = 0; i < optInfo->numIm; i++) {
+
+        n = 0;
+
+        /* 0 */
+        if ((k = optInfo->opt[i].yaw) > 0) {
+            if (k == 1) {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.yaw = j++;
+            }
+            else if(sparseOptInfo[k - 2].n.yaw >= 0)
+            {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.yaw = sparseOptInfo[k - 2].n.yaw;
+            }
+        }
+        /* 1 */
+        if ((k = optInfo->opt[i].pitch) > 0) {
+            if (k == 1) {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.pitch = j++;
+            }
+            else if(sparseOptInfo[k - 2].n.pitch >= 0)
+            {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.pitch = sparseOptInfo[k - 2].n.pitch;
+            }
+        }
+        /* 2 */
+        if ((k = optInfo->opt[i].roll) > 0) {
+            if (k == 1) {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.roll = j++;
+            }
+            else if(sparseOptInfo[k - 2].n.roll >= 0)
+            {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.roll = sparseOptInfo[k - 2].n.roll;
+            }
+        }
+        /* 3 */
+        if ((k = optInfo->opt[i].hfov) > 0) {
+            if (k == 1) {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.hfov = j++;
+            }
+            else if(sparseOptInfo[k - 2].n.hfov >= 0)
+            {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.hfov = sparseOptInfo[k - 2].n.hfov;
+            }
+        }
+        /* 4 */
+        if ((k = optInfo->opt[i].a) > 0) {
+            if (k == 1) {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.a = j++;
+            }
+            else if(sparseOptInfo[k - 2].n.a >= 0)
+            {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.a = sparseOptInfo[k - 2].n.a;
+            }
+        }
+        /* 5 */
+        if ((k = optInfo->opt[i].b) > 0) {
+            if (k == 1) {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.b = j++;
+            }
+            else if(sparseOptInfo[k - 2].n.b >= 0)
+            {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.b = sparseOptInfo[k - 2].n.b;
+            }
+        }
+        /* 6 */
+        if ((k = optInfo->opt[i].c) > 0) {
+            if (k == 1) {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.c = j++;
+            }
+            else if(sparseOptInfo[k - 2].n.c >= 0)
+            {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.c = sparseOptInfo[k - 2].n.c;
+            }
+        }
+        /* 7 */
+        if ((k = optInfo->opt[i].d) > 0) {
+            if (k == 1) {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.d = j++;
+            }
+            else if(sparseOptInfo[k - 2].n.d >= 0)
+            {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.d = sparseOptInfo[k - 2].n.d;
+            }
+        }
+        /* 8 */
+        if ((k = optInfo->opt[i].e) > 0) {
+            if (k == 1) {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.e = j++;
+            }
+            else if(sparseOptInfo[k - 2].n.e >= 0)
+            {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.e = sparseOptInfo[k - 2].n.e;
+            }
+        }
+        /* 9 */
+        if ((k = optInfo->opt[i].tiltXopt) > 0) {
+            if (k == 1) {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.tiltXopt = j++;
+            }
+            else if(sparseOptInfo[k - 2].n.tiltXopt >= 0)
+            {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.tiltXopt = sparseOptInfo[k - 2].n.tiltXopt;
+            }
+        }
+        /* 10 */
+        if ((k = optInfo->opt[i].tiltYopt) > 0) {
+            if (k == 1) {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.tiltYopt = j++;
+            }
+            else if(sparseOptInfo[k - 2].n.tiltYopt >= 0)
+            {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.tiltYopt = sparseOptInfo[k - 2].n.tiltYopt;
+            }
+        }
+        /* 11 */
+        if ((k = optInfo->opt[i].tiltZopt) > 0) {
+            if (k == 1) {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.tiltZopt = j++;
+            }
+            else if(sparseOptInfo[k - 2].n.tiltZopt >= 0)
+            {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.tiltZopt = sparseOptInfo[k - 2].n.tiltZopt;
+            }
+        }
+        /* 12 */
+        if ((k = optInfo->opt[i].tiltScaleOpt) > 0) {
+            if (k == 1) {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.tiltScaleOpt = j++;
+            }
+            else if(sparseOptInfo[k - 2].n.tiltScaleOpt >= 0)
+            {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.tiltScaleOpt = sparseOptInfo[k - 2].n.tiltScaleOpt;
+            }
+        }
+        /* 13 */
+        if ((k = optInfo->opt[i].transXopt) > 0) {
+            if (k == 1) {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.transXopt = j++;
+            }
+            else if(sparseOptInfo[k - 2].n.transXopt >= 0)
+            {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.transXopt = sparseOptInfo[k - 2].n.transXopt;
+            }
+        }
+        /* 14 */
+        if ((k = optInfo->opt[i].transYopt) > 0) {
+            if (k == 1) {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.transYopt = j++;
+            }
+            else if(sparseOptInfo[k - 2].n.transYopt >= 0)
+            {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.transYopt = sparseOptInfo[k - 2].n.transYopt;
+            }
+        }
+        /* 15 */
+        if ((k = optInfo->opt[i].transZopt) > 0) {
+            if (k == 1) {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.transZopt = j++;
+            }
+            else if(sparseOptInfo[k - 2].n.transZopt >= 0)
+            {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.transZopt = sparseOptInfo[k - 2].n.transZopt;
+            }
+        }
+        /* 16 */
+        if ((k = optInfo->opt[i].transYawOpt) > 0) {
+            if (k == 1) {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.transYawOpt = j++;
+            }
+            else if(sparseOptInfo[k - 2].n.transYawOpt >= 0)
+            {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.transYawOpt = sparseOptInfo[k - 2].n.transYawOpt;
+            }
+        }
+        /* 17 */
+        if ((k = optInfo->opt[i].transPitchOpt) > 0) {
+            if (k == 1) {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.transPitchOpt = j++;
+            }
+            else if(sparseOptInfo[k - 2].n.transPitchOpt >= 0)
+            {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.transPitchOpt = sparseOptInfo[k - 2].n.transPitchOpt;
+            }
+        }
+        /* 18 */
+        if ((k = optInfo->opt[i].testP0opt) > 0) {
+            if (k == 1) {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.testP0opt = j++;
+            }
+            else if(sparseOptInfo[k - 2].n.testP0opt >= 0)
+            {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.testP0opt = sparseOptInfo[k - 2].n.testP0opt;
+            }
+        }
+        /* 19 */
+        if ((k = optInfo->opt[i].testP1opt) > 0) {
+            if (k == 1) {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.testP1opt = j++;
+            }
+            else if(sparseOptInfo[k - 2].n.testP1opt >= 0)
+            {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.testP1opt = sparseOptInfo[k - 2].n.testP1opt;
+            }
+        }
+        /* 20 */
+        if ((k = optInfo->opt[i].testP2opt) > 0) {
+            if (k == 1) {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.testP2opt = j++;
+            }
+            else if(sparseOptInfo[k - 2].n.testP2opt >= 0)
+            {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.testP2opt = sparseOptInfo[k - 2].n.testP2opt;
+            }
+        }
+        /* 21 */
+        if ((k = optInfo->opt[i].testP3opt) > 0) {
+            if (k == 1) {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.testP3opt = j++;
+            }
+            else if(sparseOptInfo[k - 2].n.testP3opt >= 0)
+            {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.testP3opt = sparseOptInfo[k - 2].n.testP3opt;
+            }
+        }
+
+        /* 22 */
+        if ((k = optInfo->opt[i].shear_x) > 0) {
+            if (k == 1) {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.shear_x = j++;
+            }
+            else if(sparseOptInfo[k - 2].n.shear_x >= 0)
+            {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.shear_x = sparseOptInfo[k - 2].n.shear_x;
+            }
+        }
+
+        /* 23 */
+        if ((k = optInfo->opt[i].shear_y) > 0) {
+            if (k == 1) {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.shear_y = j++;
+            }
+            else if(sparseOptInfo[k - 2].n.shear_y >= 0)
+            {
+                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.shear_y = sparseOptInfo[k - 2].n.shear_y;
+            }
+        }
+
+        /* 24 */
+
+        sparseOptInfo[i].nnz = n;
+        heapsort_int(sparseOptInfo[i].nn, n);
+    }
+
+    if (nobs < fcnPanoNperCP * optInfo->numPts /* + optInfo->nr_var_constraints */ || nvars != j) {
+        exit(1);  /* internal error */
+    }
+
+    for (j = k = 0; j < optInfo->numPts; ++j) {
+        for (nincp = 0; nincp < fcnPanoNperCP; nincp++) {
+            im1 = optInfo->cpt[j].num[0];
+            im2 = optInfo->cpt[j].num[1];
+            i1 = 0;
+            i2 = 0;
+
+            while (i1 < sparseOptInfo[im1].nnz && i2 < sparseOptInfo[im2].nnz) {
+                if (sparseOptInfo[im1].nn[i1] <= sparseOptInfo[im2].nn[i2]) {
+                    if (sparseOptInfo[im1].nn[i1] == sparseOptInfo[im2].nn[i2]) {
+                        ++i2;
+                    }
+                    ++i1;
+                }
+                else {
+                    ++i2;
+                }
+                k++;
+            }
+            while (i1 < sparseOptInfo[im1].nnz) {
+                k++;
+                i1++;
+            }
+            while (i2 < sparseOptInfo[im2].nnz) {
+                k++;
+                i2++;
+            }
+        }
+    }
+
+    if (nobs > fcnPanoNperCP * optInfo->numPts) {
+        k += nvars * (nobs - (fcnPanoNperCP * optInfo->numPts));
+    }
+
+    if(splm_crsm_alloc_novalues(jac, nobs, nvars, k))
+        return -1;
+
+    colidx = jac->colidx;
+    rowptr = jac->rowptr;
+
+    for (j = k = 0; j < optInfo->numPts; ++j) {
+        for (nincp = 0; nincp < fcnPanoNperCP; nincp++) {
+            rowptr[fcnPanoNperCP*j + nincp] = k;
+
+            im1 = optInfo->cpt[j].num[0];
+            im2 = optInfo->cpt[j].num[1];
+            i1 = 0;
+            i2 = 0;
+
+            while (i1 < sparseOptInfo[im1].nnz && i2 < sparseOptInfo[im2].nnz) {
+                if (sparseOptInfo[im1].nn[i1] <= sparseOptInfo[im2].nn[i2]) {
+                    i = sparseOptInfo[im1].nn[i1];
+                    if (sparseOptInfo[im1].nn[i1] == sparseOptInfo[im2].nn[i2])
+                        ++i2;
+                    ++i1;
+                }
+                else {
+                    i = sparseOptInfo[im2].nn[i2];
+                    ++i2;
+                }
+                colidx[k++] = i;
+            }
+            while (i1 < sparseOptInfo[im1].nnz)
+                colidx[k++] = sparseOptInfo[im1].nn[i1++];
+            while (i2 < sparseOptInfo[im2].nnz)
+                colidx[k++] = sparseOptInfo[im2].nn[i2++];
+        }
+    }
+
+    for (j = fcnPanoNperCP * optInfo->numPts; j < nobs; j++) {
+        rowptr[j] = k;
+        for(i1 = 0; i1 < nvars; i1++) {
+            colidx[k++] = i1;
+        }
+    }
+
+    rowptr[nobs] = k;
+
+    return 0;
+}
+#endif
+
 int fcnPano(int m, int n, double x[], double fvec[], int *iflag)
 {
         int i;
@@ -2585,6 +2981,12 @@ void    DisposeAlignInfo( struct AlignInfo *g )
         if(g->cpt!= NULL) free(g->cpt);
         if(g->t  != NULL) free(g->t);
         if(g->cim != NULL) free(g->cim);
+#ifdef USE_SPARSE_LEVENBERG_MARQUARDT
+        if (sparseOptInfo != NULL) {
+            free(sparseOptInfo);
+            sparseOptInfo = NULL;
+        };
+#endif
 }
 
 
@@ -3149,6 +3551,19 @@ static int GetOverlapRect( PTRect *OvRect, PTRect *r1, PTRect *r2 )
 
 void SetGlobalPtr( AlignInfo *p )
 {
+#ifdef USE_SPARSE_LEVENBERG_MARQUARDT
+    int i;
+    if (sparseOptInfo != NULL) free(sparseOptInfo);
+    sparseOptInfo = (SparseOptVars*)malloc(p->numIm * sizeof(SparseOptVars));
+    for (i = 0; i < p->numIm; ++i) {
+        sparseOptInfo[i].n.hfov = sparseOptInfo[i].n.yaw = sparseOptInfo[i].n.pitch = sparseOptInfo[i].n.roll = -1;
+        sparseOptInfo[i].n.a = sparseOptInfo[i].n.b = sparseOptInfo[i].n.c = sparseOptInfo[i].n.d = sparseOptInfo[i].n.e = -1;
+        sparseOptInfo[i].n.shear_x = sparseOptInfo[i].n.shear_y = -1;
+        sparseOptInfo[i].n.tiltXopt = sparseOptInfo[i].n.tiltYopt = sparseOptInfo[i].n.tiltZopt = sparseOptInfo[i].n.tiltScaleOpt = -1;
+        sparseOptInfo[i].n.transXopt = sparseOptInfo[i].n.transYopt = sparseOptInfo[i].n.transZopt = sparseOptInfo[i].n.transYawOpt = sparseOptInfo[i].n.transPitchOpt = -1;
+        sparseOptInfo[i].n.testP0opt = sparseOptInfo[i].n.testP1opt = sparseOptInfo[i].n.testP2opt = sparseOptInfo[i].n.testP3opt = -1;
+    };
+#endif
 	optInfo = p;
 }
 

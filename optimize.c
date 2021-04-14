@@ -4,6 +4,12 @@
 
 #include "adjust.h"
 
+#ifdef USE_SPARSE_LEVENBERG_MARQUARDT
+#include "levmar.h"
+
+extern int findJacobiNonzeroPattern(int nobs, int nvars, splm_crsm* jac);
+#endif
+
 lmfunc	fcn; 
 static int			AllocateLMStruct( struct LMStruct *LM );
 static void			FreeLMStruct	( struct LMStruct *LM );
@@ -130,8 +136,10 @@ void  RunLMOptimizer( OptInfo	*o)
 
 		// infoDlg ( _initProgress, "Optimizing Variables" );
 
+#ifndef USE_SPARSE_LEVENBERG_MARQUARDT
 		/* Call lmdif. */
 		LM.ldfjac 	= LM.m;
+#endif
 		LM.mode 	= 1;
 		LM.nprint 	= 1; // 10
 		LM.info 	= 0;
@@ -142,11 +150,24 @@ void  RunLMOptimizer( OptInfo	*o)
 			LM.ftol = 0.05;  // for distance-only strategy, bail out when convergence slows
 		}
 
+#ifdef USE_SPARSE_LEVENBERG_MARQUARDT
+
+		LM.info = lmdif_sparse((int64_t)LM.m, (int64_t)LM.n,
+			 fcn,
+			 findJacobiNonzeroPattern,
+			 LM.x, LM.fvec, LM.ftol, LM.xtol,
+			 LM.gtol, LM.maxfev, LM.epsfcn, 0, 0,
+			 LM.diag, LM.mode, LM.factor,
+			 0,
+			 1 == istrat,
+			 LM.nprint, &LM.nfev);
+
+#else
 		lmdif(	LM.m,		LM.n,		LM.x,		LM.fvec,	LM.ftol,	LM.xtol,
 				LM.gtol,	LM.maxfev,	LM.epsfcn,	LM.diag,	LM.mode,	LM.factor,
 				LM.nprint,	&LM.info,	&LM.nfev,	LM.fjac,	LM.ldfjac,	LM.ipvt,
 				LM.qtf,		LM.wa1,		LM.wa2,		LM.wa3,		LM.wa4);
-
+#endif
 		lmInfo = LM.info;
 
 		// At end, one final evaluation to get errors that do not have fov stabilization applied,
@@ -235,8 +256,10 @@ void  RunBROptimizer ( OptInfo	*o, double minStepWidth)
 		
 	//infoDlg ( _initProgress, "Optimizing Params" );
 
+#ifndef USE_SPARSE_LEVENBERG_MARQUARDT
 	/* Call lmdif. */
 	LM.ldfjac 	= LM.m;
+#endif
 	LM.mode 	= 1;
 	LM.nprint 	= 1;
 	// Set stepwidth to angle corresponding to one pixel in final pano
@@ -287,6 +310,28 @@ int	AllocateLMStruct( struct LMStruct *LM )
 	LM->ipvt = NULL;
 	LM->x = LM->fvec = LM->diag = LM->qtf = LM->wa1 = LM->wa2 = LM->wa3 = LM->wa4 = LM->fjac = NULL;
 
+#ifdef USE_SPARSE_LEVENBERG_MARQUARDT
+
+	LM->x		= (double*) malloc(  LM->n * sizeof( double ));
+	LM->diag	= (double*) malloc(  LM->n * sizeof( double ));
+	LM->fvec	= (double*) malloc(  LM->m * sizeof( double ));
+	if (LM->x == NULL || LM->diag == NULL || LM->fvec == NULL)
+	{
+		FreeLMStruct(LM);
+		return -1;
+	}
+
+	// Initialize to zero
+	for (i = 0; i < LM->n; i++)
+	{
+		LM->x[i] = LM->diag[i] = 0.0;
+	}
+	for (i = 0; i < LM->m; i++)
+	{
+		LM->fvec[i] = 0.0;
+	}
+#else
+	// dense Levenberg Marquardt
 	LM->ipvt 	= (int*) 	malloc(  LM->n * sizeof( int ));		
 	LM->x 		= (double*) malloc(  LM->n * sizeof( double )); 		
 	LM->fvec 	= (double*) malloc(  LM->m * sizeof( double )); 		
@@ -324,6 +369,8 @@ int	AllocateLMStruct( struct LMStruct *LM )
 	for( j=0; j<k; j++)
 			LM->fjac[j] = 0.0;
 	
+#endif
+
 	return 0;
 }
 		
