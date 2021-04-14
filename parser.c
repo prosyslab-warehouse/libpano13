@@ -664,6 +664,12 @@ int ParseScript( char* script, AlignInfo *gl )
                                 gl->cim[k].set[2] = FALSE;
                             break;
                         default:
+                            if (!isspace(*li))
+                            {
+                                --li; nextWord(buf, &li);
+                                PrintError("Unknown variable name to optimize %s in script: Line %d", buf, lineNum);
+                                goto fail;
+                            }
                             li++;
                             break;
                         }
