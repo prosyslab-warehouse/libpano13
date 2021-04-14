@@ -47,7 +47,7 @@ ELSE(HUGIN_BASE_DIR)
   set(CMAKE_MODULE_PATH ${SOURCE_BASE_DIR}/hugin/CMakeModules)
 ENDIF(HUGIN_BASE_DIR)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/build/CMakeModules")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
 
 IF(WIN32)
   set(CMAKE_INSTALL_PREFIX "${SOURCE_BASE_DIR}/libpano13" CACHE PATH "Install prefix for libpano")
@@ -350,29 +350,12 @@ add_dependencies(${_pano_target} man)
 add_subdirectory(tools)
 add_dependencies(tools ${_pano_target})
 
-macro(setstripped _varname _value)
-  string(STRIP ${_value} _v)
-  if(USE_POSIX_PACKAGING)
-    string(TOLOWER ${_v} ${_varname})
-  else()
-    set(${_varname} ${_v})
-  endif()
-endmacro(setstripped)
-
-file(STRINGS "${TOP_SRC_DIR}/configure.ac" _config_lines)
-foreach(_c_l ${_config_lines})
-  if(_c_l MATCHES "^AC_INIT\\(\\[\([^,]+\)\\], *\\[\([^,]+\)\\], *\([^,]+\)")
-    setstripped(PACKAGE_BASE ${CMAKE_MATCH_1})
-    setstripped(PACKAGE_VERSION ${CMAKE_MATCH_2})
-    setstripped(PACKAGE_BUGREPORT ${CMAKE_MATCH_3})
-    if(PACKAGE_VERSION MATCHES "^\([0-9]+\)\\.\([0-9]+\)\\.\([0-9]+\).*$")
-      message(STATUS "found version = ${PACKAGE_VERSION}")
-      set(PANO_MAJOR_VERSION ${CMAKE_MATCH_1})
-      set(PANO_MINOR_VERSION ${CMAKE_MATCH_2})
-      set(PANO_PATCH_VERSION ${CMAKE_MATCH_3})
-    endif()
-  endif()
-endforeach(_c_l)
+set(PANO_MAJOR_VERSION 2)
+set(PANO_MINOR_VERSION 9)
+set(PANO_PATCH_VERSION 21)
+set(PACKAGE_BASE "pano13")
+set(PACKAGE_VERSION ${PANO_MAJOR_VERSION}.${PANO_MINOR_VERSION}.${PANO_PATCH_VERSION})
+set(PACKAGE_BUGREPORT "https://bugs.launchpad.net/panotools")
 
 # create TAGS file
 ADD_CUSTOM_COMMAND( OUTPUT ctags POST_BUILD
@@ -402,6 +385,7 @@ set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
 
 set(CPACK_SOURCE_IGNORE_FILES
 "/BUILD/"
+"/build/"
 "~$"
 "\\\\.swp$"
 "\\\\.history$"
@@ -426,7 +410,6 @@ set(CPACK_RESOURCE_FILE_LICENSE "${TOP_SRC_DIR}/COPYING")
 # Find the revision number and use it as the release in rpm-package-build.
 # This way we may omit the otherwise needed "--force" parameter when
 # installing from that rpm package.
-# ... Disabled for the moment, because configure.ac supplies a value
 IF(EXISTS ${PROJECT_SOURCE_DIR}/.hg)
   FIND_PROGRAM(_hg hg)
   if(_hg)
