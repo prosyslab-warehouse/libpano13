@@ -345,8 +345,6 @@ INSTALL(
 
 set(TOP_SRC_DIR ${CMAKE_SOURCE_DIR})
 
-add_subdirectory(man)
-add_dependencies(${_pano_target} man)
 add_subdirectory(tools)
 add_dependencies(tools ${_pano_target})
 
@@ -375,6 +373,12 @@ endforeach(_c_l)
 set(PACKAGE_BASE "pano13")
 set(PACKAGE_VERSION ${PANO_MAJOR_VERSION}.${PANO_MINOR_VERSION}.${PANO_PATCH_VERSION})
 set(PACKAGE_BUGREPORT "https://bugs.launchpad.net/panotools")
+
+# man pages need the version string
+if(NOT WIN32)
+add_subdirectory(man)
+add_dependencies(${_pano_target} man)
+endif()
 
 # create TAGS file
 ADD_CUSTOM_COMMAND( OUTPUT ctags POST_BUILD
