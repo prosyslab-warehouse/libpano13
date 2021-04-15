@@ -457,6 +457,50 @@ set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Library for manipulating panoramic images
 set(CPACK_COMPONENTS_ALL_IN_ONE_PACKAGE 1)
 #set(CPACK_COMPONENTS_ALL libraries tools headers doc)
 
+# install necessary DLL for Windows
+IF(WIN32)
+  FIND_FILE(TIFF_DLL
+    NAMES libtiff.dll tiff.dll
+  )
+  FIND_FILE(LZMA_DLL
+    NAMES lzma.dll
+  )
+  FIND_FILE(JPEG_DLL
+    NAMES jpeg.dll libjpeg.dll jpeg62.dll
+  )
+  FIND_FILE(PNG_DLL
+    NAMES libpng16.dll libpng15.dll libpng14.dll 
+  )
+  FIND_FILE(ZLIB_DLL
+    NAMES zlib1.dll zlib.dll libz.dll libzlib.dll
+  )
+  INSTALL(FILES ${TIFF_DLL} ${LZMA_DLL} ${JPEG_DLL} ${PNG_DLL} ${ZLIB_DLL} DESTINATION bin)
+  IF(USE_SPARSE_LEVMAR)
+    FIND_FILE(LIBCHOLMOD_DLL
+      NAMES libcholmod.dll
+    )
+    FIND_FILE(LIBAMD_DLL
+      NAMES libamd.dll
+    )
+    FIND_FILE(LIBCAMD_DLL
+      NAMES libcamd.dll
+    )
+    FIND_FILE(LIBCOLAMD_DLL
+      NAMES libcolamd.dll
+    )
+    FIND_FILE(LIBLAPACK_DLL
+      NAMES liblapack.dll
+    )
+    FIND_FILE(LIBOPENBLAS_DLL
+      NAMES openblas.dll
+    )
+    FIND_FILE(LIBSPQR_DLL
+      NAMES libspqr.dll
+    )
+  INSTALL(FILES ${LIBCHOLMOD_DLL} ${LIBAMD_DLL} ${LIBCAMD_DLL} ${LIBCOLAMD_DLL} ${LIBLAPACK_DLL} ${LIBOPENBLAS_DLL} ${LIBSPQR_DLL} DESTINATION bin)
+  ENDIF()
+ENDIF()
+
 find_package(GNUTAR QUIET)
 if(GNUTAR_FOUND)
   #message(STATUS "GNUTAR_VERSION_STRING = ${GNUTAR_VERSION_STRING}")
