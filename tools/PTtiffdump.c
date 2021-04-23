@@ -29,7 +29,6 @@
 
 #define PT_TIFF_DUMP_USAGE "PTtiffdump [options] <inputFile1> <inputFile2>\n\n"\
                          "Options:\n"\
-                         "-o\t\tOverwrite output file if it exists\n"\
 			 "\t-q\t\tQuiet run\n\t-h\t\tShow this message\n"\
                          "\n"
 
@@ -77,7 +76,6 @@ int Compare(unsigned char *data1,
 int main(int argc,char *argv[])
 {
   int opt;
-  int overwrite = 0;
   int filesCount;
   char *inputFile, *otherFile;
 
@@ -95,14 +93,10 @@ int main(int argc,char *argv[])
 
   while ((opt = getopt(argc, argv, "ohq")) != -1) {
 
-// o overwrite
 // h       -> help
 // q       -> quiet?
     
     switch(opt) {  // fhoqs        f: 102 h:104  111 113 115  o:f:hsq
-    case 'o':
-      overwrite = 1;
-      break;
     case 'q':
       ptQuietFlag = 1;
       break;
