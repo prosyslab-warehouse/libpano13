@@ -2497,6 +2497,8 @@ char *panoParserFindOLine(char *script, int index)
     }
     // find next beginning of line
     ptr = strchr(ptr, '\n');
+    if (ptr == NULL)
+        break;
     ptr++;
 
     }
