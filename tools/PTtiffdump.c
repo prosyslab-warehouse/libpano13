@@ -27,13 +27,13 @@
  * 
  */
 
-#define PT_TIFF_DUMP_USAGE "PTtiffdump [options] <inputFile> <outputFile>\n\n"\
+#define PT_TIFF_DUMP_USAGE "PTtiffdump [options] <inputFile1> <inputFile2>\n\n"\
                          "Options:\n"\
                          "-o\t\tOverwrite output file if it exists\n"\
 			 "\t-q\t\tQuiet run\n\t-h\t\tShow this message\n"\
                          "\n"
 
-#define PT_TIFF_DUMP_VERSION "PTuncrop Version " VERSION ", by Daniel M German\n"
+#define PT_TIFF_DUMP_VERSION "PTtiffdump Version " VERSION ", by Daniel M German\n"
 
 #include <assert.h>
 #include <stdio.h>
