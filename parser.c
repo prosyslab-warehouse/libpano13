@@ -103,21 +103,26 @@ static int panoExternalToInternalInputProjection(int32_t input);
 
 // Optimizer Script parser; fill global info structure
 
-char *panoParseVariable(char *buf, char *li, int lineNum, int *indirectVar, double *var)
+char *panoParseVariable(char *buf, char *li, int lineNum, int imgNr, int *indirectVar, double *var, char *varName )
 {
     if (*(li+1) == '=') {
         li++; // point to next character
         nextWord( buf, &li );
         if( sscanf( buf, "%d", indirectVar ) != 1 ) {                                       
-            PrintError("Syntax error in script: Line %d\nCould not assign variable %s", lineNum, li-1);
+            PrintError("Syntax error in script: Line %d\nCould not link variable %s with \"%s\"", lineNum, varName, buf);
             return NULL;
         }
+        if ((*indirectVar) < 0 || (*indirectVar) >= imgNr)
+        {
+            PrintError("Syntax error in script : Line %d\nLinking variable %s forward or to itself is not allowed", lineNum, varName);
+            return NULL;
+        };
         (*indirectVar)+=2; //its offset should be increased by 2... arghh
     } else {
         nextWord( buf, &li );
 
         if( sscanf( buf, " %lf", var ) != 1 ) {                                       
-            PrintError("Syntax error in script: Line %d\nCould not assign variable %s", lineNum, li-1);
+            PrintError("Syntax error in script: Line %d\nCould not assign variable %s content \"%s\"", lineNum, varName, buf);
             return NULL;
         }
     }
@@ -222,39 +227,19 @@ int ParseScript( char* script, AlignInfo *gl )
                     {
                     case 'w':   READ_VAR( "%ud", &(im->width) ); break;
                     case 'h':   READ_VAR( "%ud", &(im->height)); break;
-                    case 'v':   if( *(li+1) == '=' ){
-                            li++;
-                            READ_VAR( "%d", &(opt->hfov));
-                            opt->hfov += 2;
-                        }else{
-                            READ_VAR(  "%lf", &(im->hfov));
-                        }
+                    case 'v':   
+                        li = panoParseVariable(buf, li, lineNum, numIm, &(opt->hfov), &(im->hfov), "v");
                         break;
-                    case 'a':   if( *(li+1) == '=' ){
-                            li++;
-                            READ_VAR( "%d", &(opt->a));
-                            opt->a += 2;
-                        }else{
-                            READ_VAR( "%lf", &(im->cP.radial_params[0][3]));
-                        }
+                    case 'a':   
+                        li = panoParseVariable(buf, li, lineNum, numIm, &(opt->a), &(im->cP.radial_params[0][3]), "a");
                         im->cP.radial   = TRUE;
                         break;
-                    case 'b':   if( *(li+1) == '=' ){
-                            li++;
-                            READ_VAR( "%d", &(opt->b));
-                            opt->b += 2;
-                        }else{
-                            READ_VAR( "%lf", &(im->cP.radial_params[0][2]));
-                        }
+                    case 'b':
+                        li = panoParseVariable(buf, li, lineNum, numIm, &(opt->b), &(im->cP.radial_params[0][2]), "b");
                         im->cP.radial   = TRUE;
                         break;
-                    case 'c':   if( *(li+1) == '=' ){
-                            li++;
-                            READ_VAR(  "%d", &(opt->c));
-                            opt->c += 2;
-                        }else{
-                            READ_VAR( "%lf", &(im->cP.radial_params[0][1]));
-                        }
+                    case 'c':
+                        li = panoParseVariable(buf, li, lineNum, numIm, &(opt->c), &(im->cP.radial_params[0][1]), "c");
                         im->cP.radial   = TRUE;
                         break;
                     case 'f':
@@ -284,64 +269,29 @@ int ParseScript( char* script, AlignInfo *gl )
                     case 'o':   li++;
                         im->cP.correction_mode |=  correction_mode_morph;
                         break;
-                    case 'y':   if( *(li+1) == '=' ){
-                            li++;
-                            READ_VAR( "%d", &(opt->yaw));
-                            opt->yaw += 2;
-                        }else{
-                            READ_VAR( "%lf", &(im->yaw));
-                        }
+                    case 'y': 
+                        li = panoParseVariable(buf, li, lineNum, numIm, &(opt->yaw), &(im->yaw), "y");
                         break;
-                    case 'p':   if( *(li+1) == '=' ){
-                            li++;
-                            READ_VAR( "%d", &(opt->pitch));
-                            opt->pitch += 2;
-                        }else{
-                            READ_VAR("%lf", &(im->pitch));
-                        }
+                    case 'p': 
+                        li = panoParseVariable(buf, li, lineNum, numIm, &(opt->pitch), &(im->pitch), "p");
                         break;
-                    case 'r':   if( *(li+1) == '=' ){
-                            li++;
-                            READ_VAR( "%d", &(opt->roll));
-                            opt->roll += 2;
-                        }else{
-                            READ_VAR("%lf", &(im->roll));
-                        }
+                    case 'r': 
+                        li = panoParseVariable(buf, li, lineNum, numIm, &(opt->roll), &(im->roll), "r");
                         break;
-                    case 'd' :  if( *(li+1) == '=' ){
-                            li++;
-                            READ_VAR( "%d", &(opt->d));
-                            opt->d += 2;
-                        }else{
-                            READ_VAR( "%lf", &(im->cP.horizontal_params[0]));
-                        }
+                    case 'd':  
+                        li = panoParseVariable(buf, li, lineNum, numIm, &(opt->d), &(im->cP.horizontal_params[0]), "d");
                         im->cP.horizontal= TRUE;
                         break;  
-                    case 'e':   if( *(li+1) == '=' ){
-                            li++;
-                            READ_VAR( "%d", &(opt->e));
-                            opt->e += 2;
-                        }else{
-                            READ_VAR("%lf", &(im->cP.vertical_params[0]));
-                        }
+                    case 'e': 
+                        li = panoParseVariable(buf, li, lineNum, numIm, &(opt->e), &(im->cP.vertical_params[0]), "d");
                         im->cP.vertical = TRUE;
                         break;
-                    case 'g':   if( *(li+1) == '=' ){
-                            li++;
-                            READ_VAR( "%d", &(opt->shear_x));
-                            opt->shear_x += 2;
-                        }else{
-                            READ_VAR("%lf", &(im->cP.shear_x));
-                        }
+                    case 'g':   
+                        li = panoParseVariable(buf, li, lineNum, numIm, &(opt->shear_x), &(im->cP.shear_x), "g");
                         im->cP.shear    = TRUE;
                         break;
-                    case 't':   if( *(li+1) == '=' ){
-                            li++;
-                            READ_VAR( "%d", &(opt->shear_y));
-                            opt->shear_y += 2;
-                        }else{
-                            READ_VAR("%lf", &(im->cP.shear_y));
-                        }
+                    case 't':   
+                        li = panoParseVariable(buf, li, lineNum, numIm, &(opt->shear_y), &(im->cP.shear_y), "t");
                         im->cP.shear    = TRUE;
                         break;
                     case 'T':
@@ -352,17 +302,16 @@ int ParseScript( char* script, AlignInfo *gl )
 
                             switch (*li) {
                             case 'X':  
-                                li = panoParseVariable(buf, li, lineNum, &(opt->tiltXopt), &(im->cP.tilt_x));
-
+                                li = panoParseVariable(buf, li, lineNum, numIm, &(opt->tiltXopt), &(im->cP.tilt_x), "TiX");
                                 break;
                             case 'Y': 
-                                li = panoParseVariable(buf, li, lineNum, &(opt->tiltYopt), &(im->cP.tilt_y));
+                                li = panoParseVariable(buf, li, lineNum, numIm, &(opt->tiltYopt), &(im->cP.tilt_y), "TiY");
                                 break;
                             case 'Z': 
-                                li = panoParseVariable(buf, li, lineNum, &(opt->tiltZopt), &(im->cP.tilt_z));
+                                li = panoParseVariable(buf, li, lineNum, numIm, &(opt->tiltZopt), &(im->cP.tilt_z), "TiZ");
                                 break;
                             case 'S': 
-                                li = panoParseVariable(buf, li, lineNum, &(opt->tiltScaleOpt), &(im->cP.tilt_scale));
+                                li = panoParseVariable(buf, li, lineNum, numIm, &(opt->tiltScaleOpt), &(im->cP.tilt_scale), "TiS");
                                 if (opt->tiltScaleOpt > 1) {
                                     // it is an actual value to optimize, not a reference... check it
                                     if (im->cP.tilt_scale == 0) {
@@ -384,13 +333,13 @@ int ParseScript( char* script, AlignInfo *gl )
                             li++;
                             switch (*li) {
                             case 'X':  
-                                li = panoParseVariable(buf, li, lineNum, &(opt->transXopt), &(im->cP.trans_x));
+                                li = panoParseVariable(buf, li, lineNum, numIm, &(opt->transXopt), &(im->cP.trans_x), "TrX");
                                 break;
                             case 'Y': 
-                                li = panoParseVariable(buf, li, lineNum, &(opt->transYopt), &(im->cP.trans_y));
+                                li = panoParseVariable(buf, li, lineNum, numIm, &(opt->transYopt), &(im->cP.trans_y), "TrY");
                                 break;
                             case 'Z': 
-                                li = panoParseVariable(buf, li, lineNum, &(opt->transZopt), &(im->cP.trans_z));
+                                li = panoParseVariable(buf, li, lineNum, numIm, &(opt->transZopt), &(im->cP.trans_z), "TrZ");
                                 break;
                             default:
                                 PrintError("Unknown translation parameter Tr%c in script: Line %d", *li, lineNum);
@@ -409,10 +358,10 @@ int ParseScript( char* script, AlignInfo *gl )
                             li++;
                             switch (*li) {
                             case 'y':  
-                                li = panoParseVariable(buf, li, lineNum, &(opt->transYawOpt), &(im->cP.trans_yaw));
+                                li = panoParseVariable(buf, li, lineNum, numIm, &(opt->transYawOpt), &(im->cP.trans_yaw), "Tpy");
                                 break;
                             case 'p': 
-                                li = panoParseVariable(buf, li, lineNum, &(opt->transPitchOpt), &(im->cP.trans_pitch));
+                                li = panoParseVariable(buf, li, lineNum, numIm, &(opt->transPitchOpt), &(im->cP.trans_pitch), "Tpp");
                                 break;
                             default:
                                 PrintError("Unknown translation parameter Tp%c in script: Line %d", *li, lineNum);
@@ -424,16 +373,16 @@ int ParseScript( char* script, AlignInfo *gl )
                             li++;
                             switch (*li) {
                             case '0':  
-                                li = panoParseVariable(buf, li, lineNum, &(opt->testP0opt), &(im->cP.test_p0));
+                                li = panoParseVariable(buf, li, lineNum, numIm, &(opt->testP0opt), &(im->cP.test_p0), "Te0");
                                 break;
                             case '1': 
-                                li = panoParseVariable(buf, li, lineNum, &(opt->testP1opt), &(im->cP.test_p1));
+                                li = panoParseVariable(buf, li, lineNum, numIm, &(opt->testP1opt), &(im->cP.test_p1), "Te1");
                                 break;
                             case '2': 
-                                li = panoParseVariable(buf, li, lineNum, &(opt->testP2opt), &(im->cP.test_p2));
+                                li = panoParseVariable(buf, li, lineNum, numIm, &(opt->testP2opt), &(im->cP.test_p2), "Te2");
                                 break;
                             case '3': 
-                                li = panoParseVariable(buf, li, lineNum, &(opt->testP3opt), &(im->cP.test_p3));
+                                li = panoParseVariable(buf, li, lineNum, numIm, &(opt->testP3opt), &(im->cP.test_p3), "Te3");
                                 break;
                             default:
                                 PrintError("Unknown Test parameter Te%c in script: Line %d", *li, lineNum);
