@@ -231,7 +231,8 @@ int lmdif(int m, int n, double x[], double fvec[],
 *
 *     **********
 */
-int i,iflag,ij,jj,iter,j,l;
+int i,iflag,iter,j,l;
+int64_t ij,jj;
 double actred,delta = 1.0e-4,dirder,fnorm,fnorm1,gnorm;
 double par,pnorm,prered,ratio;
 double sum,temp,temp1,temp2,temp3,xnorm = 1.0e-4;
@@ -696,7 +697,8 @@ int lmpar(int n, double r[], int ldr, int ipvt[],
 *
 *     **********
 */
-int i,iter,ij,jj,j,jm1,jp1,k,l,nsing;
+int i,iter,j,jm1,jp1,k,l,nsing;
+int64_t ij, jj;
 double dxnorm,fp,gnorm,parc,parl,paru;
 double sum,temp;
 static double zero = 0.0;
@@ -732,7 +734,7 @@ if(nsing >= 1)
 	for( k=0; k<nsing; k++ )
 		{
 		j = nsing - k - 1;
-		wa1[j] = wa1[j]/r[j+ldr*j];
+		wa1[j] = wa1[j] / r[(int64_t)j + (int64_t)ldr * (int64_t)j];
 		temp = wa1[j];
 		jm1 = j - 1;
 		if(jm1 >= 0)
@@ -796,7 +798,7 @@ if(nsing >= n)
 				ij += 1;
 				}
 			}
-		wa1[j] = (wa1[j] - sum)/r[j+ldr*j];
+		wa1[j] = (wa1[j] - sum) / r[(int64_t)j +(int64_t)ldr * (int64_t)j];
 		jj += ldr; /* [i+ldr*j] */
 		}
 	temp = enorm(n,wa1);
@@ -1001,7 +1003,8 @@ int qrfac(int m, int n, double a[], int lda PT_UNUSED, int pivot,
 *
 *     **********
 */
-int i,ij,jj,j,jp1,k,kmax,minmn;
+int i,j,jp1,k,kmax,minmn;
+int64_t ij, jj;
 double ajnorm,sum,temp;
 static double zero = 0.0;
 static double one = 1.0;
@@ -1095,7 +1098,7 @@ for( k=jp1; k<n; k++ )
 		ij += 1; /* [i+m*k] */
 		jj += 1; /* [i+m*j] */
 		}
-	temp = sum/a[j+m*j];
+	temp = sum / a[(int64_t)j + (int64_t)m * (int64_t)j];
 	ij = j + m*k;
 	jj = j + m*j;
 	for( i=j; i<m; i++ )
@@ -1106,7 +1109,7 @@ for( k=jp1; k<n; k++ )
 		}
 	if( (pivot != 0) && (rdiag[k] != zero) )
 		{
-		temp = a[j+m*k]/rdiag[k];
+		temp = a[(int64_t)j + (int64_t)m * (int64_t)k] / rdiag[k];
 		temp = dmax1( zero, one-temp*temp );
 		rdiag[k] *= sqrt(temp);
 		temp = rdiag[k]/wa[k];
@@ -1213,7 +1216,8 @@ int qrsolv(int n, double r[], int ldr, int ipvt[], double diag[],
 *
 *     **********
 */
-int i,ij,ik,kk,j,jp1,k,kp1,l,nsing;
+int i,j,jp1,k,kp1,l,nsing;
+int64_t ij, ik, kk;
 double cos,cotan,qtbpj,sin,sum,tan,temp;
 static double zero = 0.0;
 static double p25 = 0.25;
@@ -1581,7 +1585,8 @@ int fdjac2(int m, int n, double x[], double fvec[], double fjac[],
 *
       **********
 */
-int i,j,ij;
+int i,j;
+int64_t ij;
 double eps,h,temp;
 static double zero = 0.0;
 extern double MACHEP;

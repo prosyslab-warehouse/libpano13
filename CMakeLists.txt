@@ -28,8 +28,8 @@
 ## may need to edit the wxWidgets version number below.
 ##
 
-# require at least cmake 2.8
-cmake_minimum_required(VERSION 2.8)
+# require at least cmake 3.0
+cmake_minimum_required(VERSION 3.0)
 
 #
 # find dependencies
@@ -47,6 +47,7 @@ ELSE(HUGIN_BASE_DIR)
   set(CMAKE_MODULE_PATH ${SOURCE_BASE_DIR}/hugin/CMakeModules)
 ENDIF(HUGIN_BASE_DIR)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
 
 IF(WIN32)
   set(CMAKE_INSTALL_PREFIX "${SOURCE_BASE_DIR}/libpano13" CACHE PATH "Install prefix for libpano")
@@ -117,6 +118,13 @@ INCLUDE_DIRECTORIES(${ZLIB_INCLUDE_DIR})
 INCLUDE_DIRECTORIES(${PNG_INCLUDE_DIR})
 
 set(_common_libs ${TIFF_LIBRARIES} ${ZLIB_LIBRARIES} ${JPEG_LIBRARIES} ${PNG_LIBRARIES})
+
+# Sparse or dense Levenberg Marquardt
+OPTION(USE_SPARSE_LEVMAR "Use Sparse Levenberg Marquardt algorithm instead of dense Levenberg Marquardt algorithm" OFF)
+IF(USE_SPARSE_LEVMAR)
+  FIND_PACKAGE(SUITESPARSE REQUIRED)
+  LIST(APPEND _common_libs ${SUITESPARSE_LIBRARIES})
+ENDIF()
 
 #
 # Check build type and set options accordingly
@@ -233,7 +241,6 @@ set(pano13_src
 	hdrfile.c
 	jpeg.c
 	jpegicc.c
-	lmdif.c
 	math.c
 	metadata.c
 	morpher.c
@@ -263,6 +270,15 @@ set(pano13_src
 )
 # We have some header files at top source level now
 include_directories(${CMAKE_SOURCE_DIR})
+
+IF(USE_SPARSE_LEVMAR)
+  LIST(APPEND pano13_hdr levmar.h)
+  LIST(APPEND pano13_src levmar.c)
+  ADD_DEFINITIONS(-DUSE_SPARSE_LEVENBERG_MARQUARDT)
+  INCLUDE_DIRECTORIES(${SUITESPARSE_INCLUDE_DIRS})
+ELSE()
+  LIST(APPEND pano13_src lmdif.c)
+ENDIF()
 
 if(NOT WIN32)
   # Create and install shared library on non-windows
@@ -329,8 +345,6 @@ INSTALL(
 
 set(TOP_SRC_DIR ${CMAKE_SOURCE_DIR})
 
-add_subdirectory(man)
-add_dependencies(${_pano_target} man)
 add_subdirectory(tools)
 add_dependencies(tools ${_pano_target})
 
@@ -343,13 +357,11 @@ macro(setstripped _varname _value)
   endif()
 endmacro(setstripped)
 
-file(STRINGS "${TOP_SRC_DIR}/configure.ac" _config_lines)
+file(STRINGS "${TOP_SRC_DIR}/version.h" _config_lines)
 foreach(_c_l ${_config_lines})
-  if(_c_l MATCHES "^AC_INIT\\(\\[\([^,]+\)\\], *\\[\([^,]+\)\\], *\([^,]+\)")
-    setstripped(PACKAGE_BASE ${CMAKE_MATCH_1})
-    setstripped(PACKAGE_VERSION ${CMAKE_MATCH_2})
-    setstripped(PACKAGE_BUGREPORT ${CMAKE_MATCH_3})
-    if(PACKAGE_VERSION MATCHES "^\([0-9]+\)\\.\([0-9]+\)\\.\([0-9]+\).*$")
+  if(_c_l MATCHES "^.define PTVERSION_FILEVERSIONNUMBER \([0-9]+,[0-9]+,[0-9]+\)")
+    setstripped(PACKAGE_VERSION ${CMAKE_MATCH_1})
+    if(PACKAGE_VERSION MATCHES "^\([0-9]+\),\([0-9]+\),\([0-9]+\)")
       message(STATUS "found version = ${PACKAGE_VERSION}")
       set(PANO_MAJOR_VERSION ${CMAKE_MATCH_1})
       set(PANO_MINOR_VERSION ${CMAKE_MATCH_2})
@@ -357,6 +369,16 @@ foreach(_c_l ${_config_lines})
     endif()
   endif()
 endforeach(_c_l)
+
+set(PACKAGE_BASE "pano13")
+set(PACKAGE_VERSION ${PANO_MAJOR_VERSION}.${PANO_MINOR_VERSION}.${PANO_PATCH_VERSION})
+set(PACKAGE_BUGREPORT "https://bugs.launchpad.net/panotools")
+
+# man pages need the version string
+if(NOT WIN32)
+add_subdirectory(man)
+add_dependencies(${_pano_target} man)
+endif()
 
 # create TAGS file
 ADD_CUSTOM_COMMAND( OUTPUT ctags POST_BUILD
@@ -386,6 +408,7 @@ set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
 
 set(CPACK_SOURCE_IGNORE_FILES
 "/BUILD/"
+"/build/"
 "~$"
 "\\\\.swp$"
 "\\\\.history$"
@@ -410,7 +433,6 @@ set(CPACK_RESOURCE_FILE_LICENSE "${TOP_SRC_DIR}/COPYING")
 # Find the revision number and use it as the release in rpm-package-build.
 # This way we may omit the otherwise needed "--force" parameter when
 # installing from that rpm package.
-# ... Disabled for the moment, because configure.ac supplies a value
 IF(EXISTS ${PROJECT_SOURCE_DIR}/.hg)
   FIND_PROGRAM(_hg hg)
   if(_hg)
@@ -435,7 +457,108 @@ set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Library for manipulating panoramic images
 set(CPACK_COMPONENTS_ALL_IN_ONE_PACKAGE 1)
 #set(CPACK_COMPONENTS_ALL libraries tools headers doc)
 
-find_package(GnuTar QUIET)
+# install necessary DLL for Windows
+IF(WIN32 AND BUILD_DLL)
+  SET(DLL_SEARCH_PATH ${SOURCE_BASE_DIR}/../bin)
+  IF(VCPKG_TOOLCHAIN)
+    LIST(APPEND DLL_SEARCH_PATH ${_VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/bin)
+  ENDIF()
+
+  FIND_FILE(TIFF_DLL
+    NAMES libtiff.dll tiff.dll
+    PATHS ${DLL_SEARCH_PATH}
+    NO_SYSTEM_ENVIRONMENT_PATH
+  )
+  FIND_FILE(LZMA_DLL
+    NAMES lzma.dll
+    PATHS ${DLL_SEARCH_PATH}
+    NO_SYSTEM_ENVIRONMENT_PATH
+  )
+  FIND_FILE(JPEG_DLL
+    NAMES jpeg.dll libjpeg.dll jpeg62.dll
+    PATHS ${DLL_SEARCH_PATH}
+    NO_SYSTEM_ENVIRONMENT_PATH
+  )
+  FIND_FILE(PNG_DLL
+    NAMES libpng16.dll libpng15.dll libpng14.dll 
+    PATHS ${DLL_SEARCH_PATH}
+    NO_SYSTEM_ENVIRONMENT_PATH
+  )
+  FIND_FILE(ZLIB_DLL
+    NAMES zlib1.dll zlib.dll libz.dll libzlib.dll
+    PATHS ${DLL_SEARCH_PATH}
+    NO_SYSTEM_ENVIRONMENT_PATH
+  )
+  INSTALL(FILES ${TIFF_DLL} ${LZMA_DLL} ${JPEG_DLL} ${PNG_DLL} ${ZLIB_DLL} DESTINATION bin)
+  IF(USE_SPARSE_LEVMAR)
+    FIND_FILE(LIBCHOLMOD_DLL
+      NAMES libcholmod.dll
+      PATHS ${DLL_SEARCH_PATH}
+      NO_SYSTEM_ENVIRONMENT_PATH
+    )
+    FIND_FILE(LIBAMD_DLL
+      NAMES libamd.dll
+      PATHS ${DLL_SEARCH_PATH}
+      NO_SYSTEM_ENVIRONMENT_PATH
+    )
+    FIND_FILE(LIBCAMD_DLL
+      NAMES libcamd.dll
+      PATHS ${DLL_SEARCH_PATH}
+      NO_SYSTEM_ENVIRONMENT_PATH
+    )
+    FIND_FILE(LIBCOLAMD_DLL
+      NAMES libcolamd.dll
+      PATHS ${DLL_SEARCH_PATH}
+      NO_SYSTEM_ENVIRONMENT_PATH
+    )
+    FIND_FILE(LIBCCOLAMD_DLL
+      NAMES libccolamd.dll
+      PATHS ${DLL_SEARCH_PATH}
+      NO_SYSTEM_ENVIRONMENT_PATH
+    )
+    FIND_FILE(LIBLAPACK_DLL
+      NAMES liblapack.dll
+      PATHS ${DLL_SEARCH_PATH}
+      NO_SYSTEM_ENVIRONMENT_PATH
+    )
+    FIND_FILE(LIBGFORTRAN_DLL
+      NAMES libgfortran-5.dll
+      PATHS ${DLL_SEARCH_PATH}
+      NO_SYSTEM_ENVIRONMENT_PATH
+    )
+    FIND_FILE(LIBOPENBLAS_DLL
+      NAMES openblas.dll
+      PATHS ${DLL_SEARCH_PATH}
+      NO_SYSTEM_ENVIRONMENT_PATH
+    )
+    FIND_FILE(LIBSPQR_DLL
+      NAMES libspqr.dll
+      PATHS ${DLL_SEARCH_PATH}
+      NO_SYSTEM_ENVIRONMENT_PATH
+    )
+    FIND_FILE(LIBGCC_S_SEH_DLL
+      NAMES libgcc_s_seh-1.dll
+      PATHS ${DLL_SEARCH_PATH}
+      NO_SYSTEM_ENVIRONMENT_PATH
+    )
+    FIND_FILE(LIBQUADMATH_DLL
+      NAMES libquadmath-0.dll
+      PATHS ${DLL_SEARCH_PATH}
+      NO_SYSTEM_ENVIRONMENT_PATH
+    )
+    FIND_FILE(LIBWINPTHREAD_DLL
+      NAMES libwinpthread-1.dll
+      PATHS ${DLL_SEARCH_PATH}
+      NO_SYSTEM_ENVIRONMENT_PATH
+    )
+    INSTALL(FILES ${LIBCHOLMOD_DLL} ${LIBAMD_DLL} ${LIBCAMD_DLL} ${LIBCOLAMD_DLL} ${LIBCCOLAMD_DLL} ${LIBLAPACK_DLL} ${LIBGFORTRAN_DLL} 
+      ${LIBOPENBLAS_DLL} ${LIBSPQR_DLL} ${LIBGCC_S_SEH_DLL} ${LIBQUADMATH_DLL} ${LIBWINPTHREAD_DLL}
+      DESTINATION bin
+    )
+  ENDIF()
+ENDIF()
+
+find_package(GNUTAR QUIET)
 if(GNUTAR_FOUND)
   #message(STATUS "GNUTAR_VERSION_STRING = ${GNUTAR_VERSION_STRING}")
   add_custom_target(dist

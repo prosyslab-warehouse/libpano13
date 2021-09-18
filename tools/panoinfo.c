@@ -95,7 +95,7 @@ int main(int argc,char *argv[])
 	{
 		if((pfQFString) (PTVERSION_NAME_FILEVERSION, sResult, sizeof(sResult)/sizeof(sResult[0]) ))
 		{
-			sprintf(str1, "pano13 file version:\t%s\n", sResult );
+			snprintf(str1, sizeof(str1)-1, "pano13 file version:\t%s\n", sResult );
 			strcat(str2 ,str1);
 		}
 
@@ -107,13 +107,13 @@ int main(int argc,char *argv[])
 
 		if((pfQFString) (PTVERSION_NAME_COMMENT, sResult, sizeof(sResult)/sizeof(sResult[0]) ))
 		{
-			sprintf(str1, "Comment:\t%s\n", sResult );
+			snprintf(str1, sizeof(str1)-1, "Comment:\t%s\n", sResult );
 			strcat(str2 ,str1);
 		}
 
 		if((pfQFString) (PTVERSION_NAME_LEGALCOPYRIGHT, sResult, sizeof(sResult)/sizeof(sResult[0]) ))
 		{
-			sprintf(str1, "Copyright:\t%s\n\n", sResult );
+			snprintf(str1, sizeof(str1)-1, "Copyright:\t%s\n\n", sResult );
 			strcat(str2 ,str1);
 		}
 
@@ -123,7 +123,7 @@ int main(int argc,char *argv[])
 	{
 		if((pfQFInt) ("CPErrorIsDistSphere", &iResult ))
 		{
-			sprintf(str1, "Optimizer Error:\t%s\n", iResult? "dist sphere" : "dist rect" );
+			snprintf(str1, sizeof(str1)-1, "Optimizer Error:\t%s\n", iResult? "dist sphere" : "dist rect" );
 			strcat(str2 ,str1);
 		}
 	}
@@ -132,7 +132,7 @@ int main(int argc,char *argv[])
 	{
 		if((pfQFDouble) ("MaxFFOV", &dResult ))
 		{
-			sprintf(str1, "Max FoV:\t\t%f\n\n", dResult );
+			snprintf(str1, sizeof(str1)-1, "Max FoV:\t\t%f\n\n", dResult );
 			strcat(str2 ,str1);
 		}
 
@@ -155,7 +155,7 @@ int main(int argc,char *argv[])
 			value = (char*)malloc(bufsize);
 			pfQFString(name, value, bufsize);
 
-			sprintf(str1, "   %s: %s\n", name, value);
+			snprintf(str1, sizeof(str1)-1, "   %s: %s\n", name, value);
 			strcat(str2 ,str1);
 
 			free(value);

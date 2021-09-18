@@ -48,7 +48,7 @@ void  PrintErrorIntern(char* fmt, va_list ap)
 	char *toPrint;
 
 	if (strlen(fmt) < 512) {
- 	  vsprintf(message, fmt, ap);	  
+ 	  vsnprintf(message, sizeof(message)-1, fmt, ap);	  
 	  toPrint = message;
 	}   else {
 	  // we don't have enough space, so just 
@@ -331,7 +331,7 @@ void 	showScript			( fullPath* scriptFile )
 {
 	char cmd[sizeof(fullPath) + 16];
 	
-	sprintf( cmd, "vi \"%s\"", scriptFile->name );
+	snprintf( cmd, sizeof(cmd)-1, "vi \"%s\"", scriptFile->name );
 	if (system( cmd ) == -1) {
             PrintError("Unable to execute script editor");
         }
@@ -382,7 +382,7 @@ int makePathToHost ( fullPath *path ){
 // Fname is appended to host-directory path
 
 void MakeTempName( fullPath *destPath, char *fname ){
-	sprintf( destPath->name, "pano13.%s", fname );
+	snprintf(destPath->name, sizeof(destPath->name)-1, "pano13.%s", fname);
 }
 
 void ConvFileName( fullPath *fspec,char *string){
@@ -419,7 +419,7 @@ int LaunchAndSendScript(char *application, char *script){
 		PrintError("Not enough memory");
 		return -1;
 	}
-	sprintf(cmd, "%s %s", application, script );
+	snprintf(cmd, strlen(application) + strlen(script) + 15, "%s %s", application, script );
 	if (system( cmd ) == -1) {
             PrintError("Unable to launch script");
         }

@@ -103,23 +103,26 @@ static int panoExternalToInternalInputProjection(int32_t input);
 
 // Optimizer Script parser; fill global info structure
 
-char *panoParseVariable(char *buf, char *li, int lineNum, int *indirectVar, double *var)
+char *panoParseVariable(char *buf, char *li, int lineNum, int imgNr, int *indirectVar, double *var, char *varName )
 {
     if (*(li+1) == '=') {
         li++; // point to next character
         nextWord( buf, &li );
         if( sscanf( buf, "%d", indirectVar ) != 1 ) {                                       
-            PrintError("Syntax error in script: Line %d\nCould not assign variable %s", li-1,
-                       lineNum);
+            PrintError("Syntax error in script: Line %d\nCould not link variable %s with \"%s\"", lineNum, varName, buf);
             return NULL;
         }
+        if ((*indirectVar) < 0 || (*indirectVar) >= imgNr)
+        {
+            PrintError("Syntax error in script : Line %d\nLinking variable %s forward or to itself is not allowed", lineNum, varName);
+            return NULL;
+        };
         (*indirectVar)+=2; //its offset should be increased by 2... arghh
     } else {
         nextWord( buf, &li );
 
         if( sscanf( buf, " %lf", var ) != 1 ) {                                       
-            PrintError("Syntax error in script: Line %d\nCould not assign variable %s", li-1,
-                       lineNum);
+            PrintError("Syntax error in script: Line %d\nCould not assign variable %s content \"%s\"", lineNum, varName, buf);
             return NULL;
         }
     }
@@ -137,7 +140,7 @@ int ParseScript( char* script, AlignInfo *gl )
     // Variables used by parser
     
     char                *li, line[LINE_LENGTH], *ch ,*lineStart, buf[LINE_LENGTH];
-    int                 lineNum = 0;
+    int                 lineNum = 1;
     int                 i,k;
 
 
@@ -196,10 +199,11 @@ int ParseScript( char* script, AlignInfo *gl )
 
     
     while( *ch != 0 ) {
-        lineNum++;
-        
         while(*ch == '\n')
+        {
             ch++;
+            lineNum++;
+        };
         lineStart = ch;
         
         nextLine( line, &ch );
@@ -223,39 +227,19 @@ int ParseScript( char* script, AlignInfo *gl )
                     {
                     case 'w':   READ_VAR( "%ud", &(im->width) ); break;
                     case 'h':   READ_VAR( "%ud", &(im->height)); break;
-                    case 'v':   if( *(li+1) == '=' ){
-                            li++;
-                            READ_VAR( "%d", &(opt->hfov));
-                            opt->hfov += 2;
-                        }else{
-                            READ_VAR(  "%lf", &(im->hfov));
-                        }
+                    case 'v':   
+                        li = panoParseVariable(buf, li, lineNum, numIm, &(opt->hfov), &(im->hfov), "v");
                         break;
-                    case 'a':   if( *(li+1) == '=' ){
-                            li++;
-                            READ_VAR( "%d", &(opt->a));
-                            opt->a += 2;
-                        }else{
-                            READ_VAR( "%lf", &(im->cP.radial_params[0][3]));
-                        }
+                    case 'a':   
+                        li = panoParseVariable(buf, li, lineNum, numIm, &(opt->a), &(im->cP.radial_params[0][3]), "a");
                         im->cP.radial   = TRUE;
                         break;
-                    case 'b':   if( *(li+1) == '=' ){
-                            li++;
-                            READ_VAR( "%d", &(opt->b));
-                            opt->b += 2;
-                        }else{
-                            READ_VAR( "%lf", &(im->cP.radial_params[0][2]));
-                        }
+                    case 'b':
+                        li = panoParseVariable(buf, li, lineNum, numIm, &(opt->b), &(im->cP.radial_params[0][2]), "b");
                         im->cP.radial   = TRUE;
                         break;
-                    case 'c':   if( *(li+1) == '=' ){
-                            li++;
-                            READ_VAR(  "%d", &(opt->c));
-                            opt->c += 2;
-                        }else{
-                            READ_VAR( "%lf", &(im->cP.radial_params[0][1]));
-                        }
+                    case 'c':
+                        li = panoParseVariable(buf, li, lineNum, numIm, &(opt->c), &(im->cP.radial_params[0][1]), "c");
                         im->cP.radial   = TRUE;
                         break;
                     case 'f':
@@ -285,64 +269,29 @@ int ParseScript( char* script, AlignInfo *gl )
                     case 'o':   li++;
                         im->cP.correction_mode |=  correction_mode_morph;
                         break;
-                    case 'y':   if( *(li+1) == '=' ){
-                            li++;
-                            READ_VAR( "%d", &(opt->yaw));
-                            opt->yaw += 2;
-                        }else{
-                            READ_VAR( "%lf", &(im->yaw));
-                        }
+                    case 'y': 
+                        li = panoParseVariable(buf, li, lineNum, numIm, &(opt->yaw), &(im->yaw), "y");
                         break;
-                    case 'p':   if( *(li+1) == '=' ){
-                            li++;
-                            READ_VAR( "%d", &(opt->pitch));
-                            opt->pitch += 2;
-                        }else{
-                            READ_VAR("%lf", &(im->pitch));
-                        }
+                    case 'p': 
+                        li = panoParseVariable(buf, li, lineNum, numIm, &(opt->pitch), &(im->pitch), "p");
                         break;
-                    case 'r':   if( *(li+1) == '=' ){
-                            li++;
-                            READ_VAR( "%d", &(opt->roll));
-                            opt->roll += 2;
-                        }else{
-                            READ_VAR("%lf", &(im->roll));
-                        }
+                    case 'r': 
+                        li = panoParseVariable(buf, li, lineNum, numIm, &(opt->roll), &(im->roll), "r");
                         break;
-                    case 'd' :  if( *(li+1) == '=' ){
-                            li++;
-                            READ_VAR( "%d", &(opt->d));
-                            opt->d += 2;
-                        }else{
-                            READ_VAR( "%lf", &(im->cP.horizontal_params[0]));
-                        }
+                    case 'd':  
+                        li = panoParseVariable(buf, li, lineNum, numIm, &(opt->d), &(im->cP.horizontal_params[0]), "d");
                         im->cP.horizontal= TRUE;
                         break;  
-                    case 'e':   if( *(li+1) == '=' ){
-                            li++;
-                            READ_VAR( "%d", &(opt->e));
-                            opt->e += 2;
-                        }else{
-                            READ_VAR("%lf", &(im->cP.vertical_params[0]));
-                        }
+                    case 'e': 
+                        li = panoParseVariable(buf, li, lineNum, numIm, &(opt->e), &(im->cP.vertical_params[0]), "d");
                         im->cP.vertical = TRUE;
                         break;
-                    case 'g':   if( *(li+1) == '=' ){
-                            li++;
-                            READ_VAR( "%d", &(opt->shear_x));
-                            opt->shear_x += 2;
-                        }else{
-                            READ_VAR("%lf", &(im->cP.shear_x));
-                        }
+                    case 'g':   
+                        li = panoParseVariable(buf, li, lineNum, numIm, &(opt->shear_x), &(im->cP.shear_x), "g");
                         im->cP.shear    = TRUE;
                         break;
-                    case 't':   if( *(li+1) == '=' ){
-                            li++;
-                            READ_VAR( "%d", &(opt->shear_y));
-                            opt->shear_y += 2;
-                        }else{
-                            READ_VAR("%lf", &(im->cP.shear_y));
-                        }
+                    case 't':   
+                        li = panoParseVariable(buf, li, lineNum, numIm, &(opt->shear_y), &(im->cP.shear_y), "t");
                         im->cP.shear    = TRUE;
                         break;
                     case 'T':
@@ -353,17 +302,16 @@ int ParseScript( char* script, AlignInfo *gl )
 
                             switch (*li) {
                             case 'X':  
-                                li = panoParseVariable(buf, li, lineNum, &(opt->tiltXopt), &(im->cP.tilt_x));
-
+                                li = panoParseVariable(buf, li, lineNum, numIm, &(opt->tiltXopt), &(im->cP.tilt_x), "TiX");
                                 break;
                             case 'Y': 
-                                li = panoParseVariable(buf, li, lineNum, &(opt->tiltYopt), &(im->cP.tilt_y));
+                                li = panoParseVariable(buf, li, lineNum, numIm, &(opt->tiltYopt), &(im->cP.tilt_y), "TiY");
                                 break;
                             case 'Z': 
-                                li = panoParseVariable(buf, li, lineNum, &(opt->tiltZopt), &(im->cP.tilt_z));
+                                li = panoParseVariable(buf, li, lineNum, numIm, &(opt->tiltZopt), &(im->cP.tilt_z), "TiZ");
                                 break;
                             case 'S': 
-                                li = panoParseVariable(buf, li, lineNum, &(opt->tiltScaleOpt), &(im->cP.tilt_scale));
+                                li = panoParseVariable(buf, li, lineNum, numIm, &(opt->tiltScaleOpt), &(im->cP.tilt_scale), "TiS");
                                 if (opt->tiltScaleOpt > 1) {
                                     // it is an actual value to optimize, not a reference... check it
                                     if (im->cP.tilt_scale == 0) {
@@ -385,13 +333,13 @@ int ParseScript( char* script, AlignInfo *gl )
                             li++;
                             switch (*li) {
                             case 'X':  
-                                li = panoParseVariable(buf, li, lineNum, &(opt->transXopt), &(im->cP.trans_x));
+                                li = panoParseVariable(buf, li, lineNum, numIm, &(opt->transXopt), &(im->cP.trans_x), "TrX");
                                 break;
                             case 'Y': 
-                                li = panoParseVariable(buf, li, lineNum, &(opt->transYopt), &(im->cP.trans_y));
+                                li = panoParseVariable(buf, li, lineNum, numIm, &(opt->transYopt), &(im->cP.trans_y), "TrY");
                                 break;
                             case 'Z': 
-                                li = panoParseVariable(buf, li, lineNum, &(opt->transZopt), &(im->cP.trans_z));
+                                li = panoParseVariable(buf, li, lineNum, numIm, &(opt->transZopt), &(im->cP.trans_z), "TrZ");
                                 break;
                             default:
                                 PrintError("Unknown translation parameter Tr%c in script: Line %d", *li, lineNum);
@@ -410,10 +358,10 @@ int ParseScript( char* script, AlignInfo *gl )
                             li++;
                             switch (*li) {
                             case 'y':  
-                                li = panoParseVariable(buf, li, lineNum, &(opt->transYawOpt), &(im->cP.trans_yaw));
+                                li = panoParseVariable(buf, li, lineNum, numIm, &(opt->transYawOpt), &(im->cP.trans_yaw), "Tpy");
                                 break;
                             case 'p': 
-                                li = panoParseVariable(buf, li, lineNum, &(opt->transPitchOpt), &(im->cP.trans_pitch));
+                                li = panoParseVariable(buf, li, lineNum, numIm, &(opt->transPitchOpt), &(im->cP.trans_pitch), "Tpp");
                                 break;
                             default:
                                 PrintError("Unknown translation parameter Tp%c in script: Line %d", *li, lineNum);
@@ -425,16 +373,16 @@ int ParseScript( char* script, AlignInfo *gl )
                             li++;
                             switch (*li) {
                             case '0':  
-                                li = panoParseVariable(buf, li, lineNum, &(opt->testP0opt), &(im->cP.test_p0));
+                                li = panoParseVariable(buf, li, lineNum, numIm, &(opt->testP0opt), &(im->cP.test_p0), "Te0");
                                 break;
                             case '1': 
-                                li = panoParseVariable(buf, li, lineNum, &(opt->testP1opt), &(im->cP.test_p1));
+                                li = panoParseVariable(buf, li, lineNum, numIm, &(opt->testP1opt), &(im->cP.test_p1), "Te1");
                                 break;
                             case '2': 
-                                li = panoParseVariable(buf, li, lineNum, &(opt->testP2opt), &(im->cP.test_p2));
+                                li = panoParseVariable(buf, li, lineNum, numIm, &(opt->testP2opt), &(im->cP.test_p2), "Te2");
                                 break;
                             case '3': 
-                                li = panoParseVariable(buf, li, lineNum, &(opt->testP3opt), &(im->cP.test_p3));
+                                li = panoParseVariable(buf, li, lineNum, numIm, &(opt->testP3opt), &(im->cP.test_p3), "Te3");
                                 break;
                             default:
                                 PrintError("Unknown Test parameter Te%c in script: Line %d", *li, lineNum);
@@ -450,7 +398,7 @@ int ParseScript( char* script, AlignInfo *gl )
                         break;
                     case 'n':           // Set filename
                         nextWord( buf, &li );
-                        sprintf( im->name, "%s", buf );
+                        snprintf( im->name, sizeof(im->name)-1, "%s", buf );
                         break;
                     case 'm':  // Frame
                         li++;
@@ -665,6 +613,12 @@ int ParseScript( char* script, AlignInfo *gl )
                                 gl->cim[k].set[2] = FALSE;
                             break;
                         default:
+                            if (!isspace(*li))
+                            {
+                                --li; nextWord(buf, &li);
+                                PrintError("Unknown variable name to optimize %s in script: Line %d", buf, lineNum);
+                                goto fail;
+                            }
                             li++;
                             break;
                         }
@@ -922,7 +876,7 @@ void WriteResults( char* script, fullPath *sfile,  AlignInfo *g, double ds( int 
 
     panoLocaleSave;
 
-    hres = (char**) mymalloc( strlen(script) + g->numIm * 600 + g->numPts * 200 + 10000 ); // Do we ever need more?
+    hres = (char**) mymalloc( strlen(script) + (size_t)(g->numIm) * 1000 + (size_t)(g->numPts) * 300 + 10000 ); // Do we ever need more?
     if( hres == NULL )
     {
         PrintError("Not enough memory to create resultfile");
@@ -1612,7 +1566,7 @@ int numLines( char* script, char first )
 #undef  MY_SSCANF
 #define MY_SSCANF( str, format, ptr )       if( sscanf( str, format, ptr ) != 1 )   \
     {                               \
-        PrintError("Syntax error in script: Could read value for variable");\
+        PrintError("Syntax error in script: Could not read value for variable");\
         return -1;                          \
     }
 
@@ -1848,11 +1802,11 @@ static int ReadImageDescription( Image *imPtr, stBuf *sPtr, char *line )
             break;
         case '+':   nextWord( buf, &ch );
             PrintError("Obsolete + parameter is ignored in image description");
-            sprintf( sBuf.srcName, "%s", buf);
+            snprintf( sBuf.srcName, sizeof(sBuf.srcName)-1, "%s", buf);
             break;
         case '-':   nextWord( buf, &ch );
             PrintError("Obsolete - parameter is ignored in image description");
-            sprintf( sBuf.destName, "%s", buf );
+            snprintf( sBuf.destName, sizeof(sBuf.destName)-1, "%s", buf );
             break;
             
             
@@ -1961,7 +1915,7 @@ static int ReadImageDescription( Image *imPtr, stBuf *sPtr, char *line )
             ch++;
         break;
         default:
-            printf("REturning...........\n");
+            printf("Returning...........\n");
             PrintError("Illegal token in adjust line [%c]  rest of line [%s]", *ch, ch);
             return -1;
         }
@@ -2064,7 +2018,7 @@ static int ReadPanoramaDescription( Image *imPtr, stBuf *sPtr, char *line )
         ch++;
         break;
         default:
-        PrintError("Illegal token in 'p'-line [%d] [%c] [%s]", *ch, *ch, ch);
+        PrintError("Illegal token in 'p'-line [%c] [%s]", *ch, ch);
         ch++;
         break;
         }
@@ -2492,6 +2446,8 @@ char *panoParserFindOLine(char *script, int index)
     }
     // find next beginning of line
     ptr = strchr(ptr, '\n');
+    if (ptr == NULL)
+        break;
     ptr++;
 
     }

@@ -4,6 +4,12 @@
 
 #include "adjust.h"
 
+#ifdef USE_SPARSE_LEVENBERG_MARQUARDT
+#include "levmar.h"
+
+extern int calculateJacobian(int nobs, int nvars, double* x, splm_crsm* jac, int* nfeval, int* iflag);
+#endif
+
 lmfunc	fcn; 
 static int			AllocateLMStruct( struct LMStruct *LM );
 static void			FreeLMStruct	( struct LMStruct *LM );
@@ -96,7 +102,7 @@ void  RunLMOptimizer( OptInfo	*o)
 	{
 		char msgx[200];
 		warning	= "Warning: Number of Data Points is smaller than Number of Variables to fit.\n";
-		sprintf (msgx,"You have too few control points (%d) or too many parameters (%d).  Strange values may result!",o->numData,LM.n);
+		snprintf (msgx, sizeof(msgx)-1, "You have too few control points (%d) or too many parameters (%d).  Strange values may result!",o->numData,LM.n);
 		PrintError(msgx);
 	}
 	
@@ -130,8 +136,10 @@ void  RunLMOptimizer( OptInfo	*o)
 
 		// infoDlg ( _initProgress, "Optimizing Variables" );
 
+#ifndef USE_SPARSE_LEVENBERG_MARQUARDT
 		/* Call lmdif. */
 		LM.ldfjac 	= LM.m;
+#endif
 		LM.mode 	= 1;
 		LM.nprint 	= 1; // 10
 		LM.info 	= 0;
@@ -142,11 +150,24 @@ void  RunLMOptimizer( OptInfo	*o)
 			LM.ftol = 0.05;  // for distance-only strategy, bail out when convergence slows
 		}
 
+#ifdef USE_SPARSE_LEVENBERG_MARQUARDT
+
+		LM.info = lmdif_sparse((int64_t)LM.m, (int64_t)LM.n,
+			 fcn,
+			 calculateJacobian,
+			 LM.x, LM.fvec, LM.ftol, LM.xtol,
+			 LM.gtol, LM.maxfev, LM.epsfcn, 0, 0,
+			 LM.diag, LM.mode, LM.factor,
+			 0,
+			 1 == istrat,
+			 LM.nprint, &LM.nfev);
+
+#else
 		lmdif(	LM.m,		LM.n,		LM.x,		LM.fvec,	LM.ftol,	LM.xtol,
 				LM.gtol,	LM.maxfev,	LM.epsfcn,	LM.diag,	LM.mode,	LM.factor,
 				LM.nprint,	&LM.info,	&LM.nfev,	LM.fjac,	LM.ldfjac,	LM.ipvt,
 				LM.qtf,		LM.wa1,		LM.wa2,		LM.wa3,		LM.wa4);
-
+#endif
 		lmInfo = LM.info;
 
 		// At end, one final evaluation to get errors that do not have fov stabilization applied,
@@ -172,7 +193,7 @@ void  RunLMOptimizer( OptInfo	*o)
 				LM.info = 8;
 		totalfev += LM.nfev;
 
-		sprintf( (char*) o->message, "# %s%d function evaluations\n# %s\n# final rms error %g units\n",
+		snprintf( (char*) o->message, sizeof(o->message)-1, "# %s%d function evaluations\n# %s\n# final rms error %g units\n",
 									warning, totalfev, infmsg[LM.info],
 									sqrt(sumSquared(LM.fvec,LM.m)/LM.m) * sqrt((double)FUNCS_PER_CP));
 
@@ -235,8 +256,10 @@ void  RunBROptimizer ( OptInfo	*o, double minStepWidth)
 		
 	//infoDlg ( _initProgress, "Optimizing Params" );
 
+#ifndef USE_SPARSE_LEVENBERG_MARQUARDT
 	/* Call lmdif. */
 	LM.ldfjac 	= LM.m;
+#endif
 	LM.mode 	= 1;
 	LM.nprint 	= 1;
 	// Set stepwidth to angle corresponding to one pixel in final pano
@@ -271,7 +294,8 @@ void  RunBROptimizer ( OptInfo	*o, double minStepWidth)
 
 int	AllocateLMStruct( struct LMStruct *LM )
 {
-	int i,k;
+	int i;
+	int64_t j, k;
 	
 
 	if( LM->n <= 0 || LM->m <= 0 || LM->n > LM->m )
@@ -286,6 +310,28 @@ int	AllocateLMStruct( struct LMStruct *LM )
 	LM->ipvt = NULL;
 	LM->x = LM->fvec = LM->diag = LM->qtf = LM->wa1 = LM->wa2 = LM->wa3 = LM->wa4 = LM->fjac = NULL;
 
+#ifdef USE_SPARSE_LEVENBERG_MARQUARDT
+
+	LM->x		= (double*) malloc(  LM->n * sizeof( double ));
+	LM->diag	= (double*) malloc(  LM->n * sizeof( double ));
+	LM->fvec	= (double*) malloc(  LM->m * sizeof( double ));
+	if (LM->x == NULL || LM->diag == NULL || LM->fvec == NULL)
+	{
+		FreeLMStruct(LM);
+		return -1;
+	}
+
+	// Initialize to zero
+	for (i = 0; i < LM->n; i++)
+	{
+		LM->x[i] = LM->diag[i] = 0.0;
+	}
+	for (i = 0; i < LM->m; i++)
+	{
+		LM->fvec[i] = 0.0;
+	}
+#else
+	// dense Levenberg Marquardt
 	LM->ipvt 	= (int*) 	malloc(  LM->n * sizeof( int ));		
 	LM->x 		= (double*) malloc(  LM->n * sizeof( double )); 		
 	LM->fvec 	= (double*) malloc(  LM->m * sizeof( double )); 		
@@ -295,7 +341,7 @@ int	AllocateLMStruct( struct LMStruct *LM )
 	LM->wa2 	= (double*) malloc(  LM->n * sizeof( double )); 		
 	LM->wa3 	= (double*) malloc(  LM->n * sizeof( double )); 		
 	LM->wa4 	= (double*) malloc(  LM->m * sizeof( double )); 		
-	LM->fjac 	= (double*) malloc(  LM->m  * LM->n * sizeof( double ));
+	LM->fjac 	= (double*) malloc(  (int64_t)LM->m  * (int64_t)LM->n * sizeof( double ));
 
 	if( LM->ipvt == NULL ||  LM->x    == NULL 	|| LM->fvec == NULL || LM->diag == NULL || 
 		LM->qtf  == NULL ||  LM->wa1  == NULL 	|| LM->wa2  == NULL || LM->wa3  == NULL || 
@@ -319,10 +365,12 @@ int	AllocateLMStruct( struct LMStruct *LM )
 		LM->fvec[i] = LM->wa4[i] = 0.0;
 	}
 
-	k = LM->m * LM->n;
-	for( i=0; i<k; i++)
-			LM->fjac[i] = 0.0;
+	k = (int64_t)LM->m * (int64_t)LM->n;
+	for( j=0; j<k; j++)
+			LM->fjac[j] = 0.0;
 	
+#endif
+
 	return 0;
 }
 		

@@ -1,5 +1,4 @@
 TAGS
-glob:*.cmake
 glob:*.filters
 glob:*.opensdf
 glob:*.sdf
@@ -10,7 +9,6 @@ glob:*~
 glob:*.o
 glob:*.lo
 glob:CMakeCache.txt
-glob:CMakeFiles
 glob:CPackSourceConfig.cmake
 glob:Debug CMD
 glob:Makefile
@@ -37,3 +35,5 @@ tools/panoinfo
 .libs/
 .deps/
 Makefile.in
+BUILD/
+build/

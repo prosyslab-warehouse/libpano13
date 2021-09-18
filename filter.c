@@ -383,7 +383,7 @@ void filter( TrformStr *TrPtr, flfn func, flfn16 func16, void* params, int color
                 {
                         if(TrPtr->mode & _show_progress)
                         {       
-                                sprintf( percent, "%d", (int) ((y * 100)/ TrPtr->dest->height));
+                                snprintf( percent, 7, "%d", (int) ((y * 100)/ TrPtr->dest->height));
                                 if( ! Progress( _setProgress, percent ) )
                                 {
                                         //myfree( (void**)TrPtr->dest->data );

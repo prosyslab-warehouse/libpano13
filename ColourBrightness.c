@@ -41,8 +41,7 @@
 #include "pttiff.h"
 
 #ifdef WIN32
-#ifdef _MSC_VER
-
+#if defined _MSC_VER && _MSC_VER < 1900
 // MSVC doesn't support round()
 //#define round(x) ( (int) (x+0.5) )
 #define round(x) (int)(x)
@@ -531,7 +530,7 @@ int OutputCurves(int index, magnolia_struct *curves, int typeOfCorrection,
   // actual name. This is not done yet
 
   strncpy(outputFileName, panoFileName->name, 500);
-  sprintf(temp, "%04d", index);
+  snprintf(temp, 8, "%04d", index);
   strcat(outputFileName, temp);
 
   panoReplaceExt(outputFileName, curveExtension[curveType-1]); 
@@ -720,7 +719,7 @@ void ColourBrightness(  fullPath *fullPathImages,  fullPath *outputFullPathImage
 
   for (index = 0;  index <counterImages; index++ ) {
 
-    sprintf(string, "%d", index * 100 / counterImages);
+    snprintf(string, sizeof(string)-1, "%d", index * 100 / counterImages);
 
     if ( ptQuietFlag == 0 ) {
 
@@ -793,7 +792,7 @@ int CorrectFileColourBrightness(fullPath *inPath, fullPath *outPath, magnolia_st
   Image image;
   char tempString[512];
   if (panoTiffRead (&image, inPath->name) == 0) {
-    sprintf(tempString, "Could not read TIFF file %s", inPath->name);
+    snprintf(tempString, sizeof(tempString)-1, "Could not read TIFF file %s", inPath->name);
     PrintError(tempString);
     return -1;
   }   
@@ -1278,7 +1277,7 @@ histograms_struct *ReadHistograms (fullPath *fullPathImages, int numberImages)
     }
     
     if ((ptrTIFFs[currentImage] = TIFFOpen(tempString, "r")) == NULL) {
-      sprintf(tempString2, "Could not open TIFF file [%s]", tempString);
+      snprintf(tempString2, sizeof(tempString2)-1, "Could not open TIFF file [%s]", tempString);
       PrintError(tempString2);
       saveReturnValue = 0;
       goto Exit;
@@ -1358,7 +1357,7 @@ histograms_struct *ReadHistograms (fullPath *fullPathImages, int numberImages)
 
       // This probably means every 2 percent update progress
       
-      sprintf(tempString, "%d", (int)(currentRow * 100/imageLength));
+      snprintf(tempString, sizeof(tempString)-1, "%d", (int)(currentRow * 100/imageLength));
       
       if ( ptQuietFlag == 0 ) {
         if (Progress(_setProgress, tempString) == 0) {

@@ -1189,7 +1189,7 @@ void MyTransForm( TrformStr *TrPtr, fDesc *fD, int color, int imageNum)
                             strcpy(title, "Converting Image #");
                             strcat(title, (char *)the_Num);
 #else
-                            sprintf(title, "Converting Image #%d", imageNum);
+                            snprintf(title, sizeof(title)-1, "Converting Image #%d", imageNum);
 #endif
                             strcpy(progressMessage, title);	
                             //progressMessage = "Image Conversion"; 	
@@ -1283,7 +1283,7 @@ void MyTransForm( TrformStr *TrPtr, fDesc *fD, int color, int imageNum)
 		skip++;
 		if( skip == (int)ceil(TrPtr->dest->height/50.0) ){
 			if(TrPtr->mode & _show_progress){	
-				sprintf( percent, "%d", (int) ((y * 100)/ TrPtr->dest->height));
+				snprintf( percent, 8, "%d", (int) ((y * 100)/ TrPtr->dest->height));
 				if( ! Progress( _setProgress, percent ) ){
 					TrPtr->success = 0;
 					goto Trform_exit;
@@ -2110,7 +2110,7 @@ void transForm_aa( TrformStr *TrPtr, fDesc *fD,fDesc *finvD, int color, int imag
                             strcpy(title, "Converting Image #");
                             strcat(title, (char *)the_Num);
 #else
-                            sprintf(title, "Converting Image #%d", imageNum);
+                            snprintf(title, sizeof(title)-1, "Converting Image #%d", imageNum);
 #endif
                             strcpy(progressMessage, title);	
                             //progressMessage = "Image Conversion"; 	
@@ -2177,7 +2177,7 @@ void transForm_aa( TrformStr *TrPtr, fDesc *fD,fDesc *finvD, int color, int imag
 		skip++;
 		if( skip == (int)ceil(TrPtr->dest->height/50.0) ){
 			if(TrPtr->mode & _show_progress){	
-				sprintf( percent, "%d", (int) ((y * 100)/ TrPtr->dest->height));
+				snprintf( percent, 8, "%d", (int) ((y * 100)/ TrPtr->dest->height));
 				if( ! Progress( _setProgress, percent ) ){
 					TrPtr->success = 0;
 					goto Trform_exit;

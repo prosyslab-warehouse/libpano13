@@ -35,7 +35,7 @@ discovered by Bruno Postle and Thomas Sharpless in December
 
 #include <math.h>
 
-#include <filter.h>
+#include "filter.h"
 
 int panini_general_toSphere	( double* lon, double* lat, 
 							  double h,  double v, 

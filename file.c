@@ -172,7 +172,6 @@ size_t panoPSDPICTResourceWrite(file_spec fnum, unsigned char resource, unsigned
     return ftell(fnum) - startLocation;
 }
 
-#define CREATED_BY_PSD "Panotools " PTVERSIONBIT " " VERSION
 #define IPTC_VERSION_ID 0
 #define IPTC_DATE_CREATED_ID 0x37
 #define IPTC_TIME_CREATED_ID 0x3C
@@ -234,10 +233,6 @@ size_t panoPSDResourcesBlockWrite(Image *im, file_spec   fnum)
         IPTCVersion[1] = 2;
         IPTCVersion[2] = 0;
         panoPSDPICTResourceWrite(fnum, 0x02, IPTC_VERSION_ID, 2, IPTCVersion);
-
-        // Must not exceed 32 char by IPTC standard.
-        descLength = (short)min( 32, strlen(CREATED_BY_PSD) );
-        panoPSDPICTResourceWrite(fnum, 0x02, IPTC_DESCRIPTION_WRITER_ID, descLength, CREATED_BY_PSD );
 
         if(im->metadata.imageDescription)
         {
@@ -1722,7 +1717,7 @@ static int addLayer( Image *im, file_spec src, file_spec fnum, stBuf *sB, Boolea
     }
     panoWriteINT32( fnum, 0 );                          // Layer blending ranges
 
-    sprintf( &(sLayerName[1]), "%03d", numLayers+1 );
+    snprintf( &(sLayerName[1]), 3, "%03d", numLayers+1 );
 
     sLayerName[0] = 3;
     count = 4;
@@ -1884,7 +1879,7 @@ int panoCreateLayeredPSD(fullPath * fullPathImages, int numberImages,
 
     if (ptQuietFlag == 0) {
         Progress(_initProgress, "Converting TIFF to PSD");
-        sprintf(tempString, "%d", 100 / numberImages);
+        snprintf(tempString, sizeof(tempString)-1, "%d", 100 / numberImages);
         Progress(_setProgress, tempString);
     }
 
@@ -2075,7 +2070,7 @@ int panoCreateLayeredPSD(fullPath * fullPathImages, int numberImages,
         }
         panoWriteINT32( fnum, 0 );                  // Layer blending ranges
     
-        sprintf(&(sLayerName[1]), "%03d", (i+1)%1000 );
+        snprintf(&(sLayerName[1]), 3, "%03d", (i+1)%1000 );
         sLayerName[0] = 3;
         count = 4;
         mywrite( fnum, count, sLayerName ); // Layer Name
@@ -2084,7 +2079,7 @@ int panoCreateLayeredPSD(fullPath * fullPathImages, int numberImages,
     //Now iterate over the images and add them as layers to the PSD file
     for (i = 0; i < numberImages; i++) {
         if (ptQuietFlag == 0) {
-            sprintf(tempString, "%d", i * 100 / numberImages);
+            snprintf(tempString, sizeof(tempString)-1, "%d", i * 100 / numberImages);
             if (Progress(_setProgress, tempString) == 0) {
                 remove(outputFileName->name);
                 return -1;
@@ -2232,7 +2227,7 @@ int panoCreateLayeredPSD(fullPath * fullPathImages, int numberImages,
         }
         panoWriteINT32( fnum, 0 );                              // Layer blending ranges
 
-        sprintf( &(sLayerName[1]), "%03d", i+1 );
+        snprintf( &(sLayerName[1]), 3, "%03d", i+1 );
         sLayerName[0] = 3;
         count = 4;
         mywrite( fnum, count, sLayerName ); // Layer Name
@@ -2817,10 +2812,10 @@ int panoFileMakeTemp(fullPath * path)
     nTry++;
 
     for (i = 0; i < MAX_TEMP_TRY; nTry++, i++) {
-        sprintf(fname, "_PTStitcher_tmp_%06d", nTry);
+        snprintf(fname, sizeof(fname)-1, "_PTStitcher_tmp_%06d", nTry);
         if (strlen(fname) + 2 <
             sizeof(path->name) - (strlen(path->name) - strlen(dir))) {
-            sprintf(dir, "%s", fname);
+            snprintf(dir, strlen(fname), "%s", fname);
             // TODO (dmg -- 060730)
             // THis routine is not perfect. IT does not check if the
             // file is really a file, nor that there is write access to it
@@ -2922,7 +2917,7 @@ int panoFileOutputNamesCreate(fullPath *ptrOutputFiles, int filesCount, char *ou
 
 
     for (i =0; i< filesCount ; i++) {
-        sprintf( outputFilename, outputPrefix, i );
+        snprintf( outputFilename, sizeof(outputFilename)-1, outputPrefix, i );
 
         // Verify the filename is different from the prefix 
         if (strcmp(outputFilename, outputPrefix) == 0) {

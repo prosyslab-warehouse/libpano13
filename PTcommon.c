@@ -102,7 +102,7 @@ int panoPSDCreate(fullPath * fullPathImages, int numberImages,
 
     if (ptQuietFlag == 0) {
         Progress(_initProgress, "Converting TIFF to PSD");
-        sprintf(tempString, "%d", 100 / numberImages);
+        snprintf(tempString, sizeof(tempString)-1, "%d", 100 / numberImages);
         Progress(_setProgress, tempString);
     }
 
@@ -168,7 +168,7 @@ int panoPSDCreate(fullPath * fullPathImages, int numberImages,
     for (i = 1; i < numberImages; i++) {
 
         if (ptQuietFlag == 0) {
-            sprintf(tempString, "%d", i * 100 / numberImages);
+            snprintf(tempString, sizeof(tempString)-1, "%d", i * 100 / numberImages);
             if (Progress(_setProgress, tempString) == 0) {
                 remove(outputFileName->name);
                 return -1;
@@ -912,7 +912,7 @@ int panoCreatePanorama(fullPath ptrImageFileNames[], int counterImageFiles,
           transform.mode       |= _wrapX;
         
         if (ptQuietFlag == 0) {
-            sprintf(tmpStr, "Converting Image %d / %d", (loopCounter + 1),
+            snprintf(tmpStr, sizeof(tmpStr)-1, "Converting Image %d / %d", (loopCounter + 1),
                     counterImageFiles);
             Progress(_initProgress, tmpStr);
         }
@@ -1171,11 +1171,11 @@ int panoCreatePanorama(fullPath ptrImageFileNames[], int counterImageFiles,
 
                 //Update progress bar
                 if (croppedTIFFIntermediate)
-                    sprintf(tmpStr, "%d",
+                    snprintf(tmpStr, sizeof(tmpStr)-1, "%d",
                             (int) ((resultPanorama.selection.bottom -
                                     ROIRect.top) * 100 / croppedHeight));
                 else
-                    sprintf(tmpStr, "%d",
+                    snprintf(tmpStr, sizeof(tmpStr)-1, "%d",
                             (int) (resultPanorama.selection.bottom * 100 /
                                    resultPanorama.height));
 
@@ -1314,7 +1314,7 @@ int panoCreatePanorama(fullPath ptrImageFileNames[], int counterImageFiles,
     for (loopCounter = 0; loopCounter < counterImageFiles; loopCounter++) {
         
         if (ptQuietFlag == 0) {
-            sprintf(tmpStr, "%d",
+            snprintf(tmpStr, sizeof(tmpStr)-1, "%d",
                     (100 * loopCounter) / counterImageFiles);
             if (Progress(_setProgress, tmpStr) == 0) {
                 return (1);
@@ -1322,7 +1322,7 @@ int panoCreatePanorama(fullPath ptrImageFileNames[], int counterImageFiles,
         }
 
         strcpy(outputFileName, panoFileName->name);
-        sprintf(var40, "%04d", loopCounter);
+        snprintf(var40, 8, "%04d", loopCounter);
         strcat(outputFileName, var40);
         panoReplaceExt(outputFileName, ".tif");
         // remove output file, if it exists. 
@@ -1736,7 +1736,7 @@ int panoFlattenTIFF(fullPath * fullPathImages, int counterImageFiles,
         //    printf("Passing offsetAfterThisPass [%d] of [%d] linesPerPass  %d \n",offsetAfterThisPass, outputMetadata->imageHeight, linesPerPass);
 
         if (ptQuietFlag == 0) {
-            sprintf(tmpFilename, "%d",
+            snprintf(tmpFilename, sizeof(tmpFilename)-1, "%d",
                     (offsetBeforeThisPass +
                      linesToRead) * 100 / outputMetadata->imageHeight);
             if (Progress(_setProgress, tmpFilename) == 0)

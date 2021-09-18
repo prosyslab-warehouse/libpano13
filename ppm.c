@@ -227,7 +227,7 @@ int writePPM(Image * im, fullPath * sfile)
     }
 
 
-    sprintf(header, "P6\n%d %d\n%ld\n", im->width,
+    snprintf(header, sizeof(header)-1, "P6\n%d %d\n%ld\n", im->width,
             im->height, 255L);
 
     count = strlen(header);
