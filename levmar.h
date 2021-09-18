@@ -62,6 +62,7 @@ SuiteSparse_long splm_ccsm_col_elmidxs(splm_ccsm* sm, SuiteSparse_long j, SuiteS
 
 void splm_crsm_init_invalid(splm_crsm* sm);
 SuiteSparse_long splm_crsm_alloc_novalues(splm_crsm* sm, SuiteSparse_long nr, SuiteSparse_long nc, SuiteSparse_long nnz);
+SuiteSparse_long splm_crsm_alloc_rest(splm_crsm* sm, SuiteSparse_long nnz);
 void splm_crsm_free(splm_crsm* sm);
 splm_ccsm* cholmod_sparse_to_splm_ccsm(cholmod_sparse* cmsp, cholmod_common* cm_common);
 void splm_ccsm_destruct(splm_ccsm* sm);
@@ -137,7 +138,7 @@ SuiteSparse_long RTsolve
 
 int lmdif_sparse(int n_obs, int m_vars,
     int(*fcn)(int n_obs, int m_vars, double* x, double* fvec, int* iflag),
-    int (*findJacobiNonzeroPattern)(int n_obs, int m_vars, splm_crsm* jac),
+    int (*calculateJacobian)(int n_obs, int m_vars, double* x, splm_crsm* jac, int* nfeval, int* iflag),
     double* x, double* fvec,
     double ftol, double xtol, double gtol,
     int maxfev, double epsfcn, double mindeltax, int forward_diff,

@@ -7,7 +7,7 @@
 #ifdef USE_SPARSE_LEVENBERG_MARQUARDT
 #include "levmar.h"
 
-extern int findJacobiNonzeroPattern(int nobs, int nvars, splm_crsm* jac);
+extern int calculateJacobian(int nobs, int nvars, double* x, splm_crsm* jac, int* nfeval, int* iflag);
 #endif
 
 lmfunc	fcn; 
@@ -154,7 +154,7 @@ void  RunLMOptimizer( OptInfo	*o)
 
 		LM.info = lmdif_sparse((int64_t)LM.m, (int64_t)LM.n,
 			 fcn,
-			 findJacobiNonzeroPattern,
+			 calculateJacobian,
 			 LM.x, LM.fvec, LM.ftol, LM.xtol,
 			 LM.gtol, LM.maxfev, LM.epsfcn, 0, 0,
 			 LM.diag, LM.mode, LM.factor,

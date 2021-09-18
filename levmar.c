@@ -433,16 +433,36 @@ SuiteSparse_long splm_crsm_alloc_novalues(splm_crsm* sm, SuiteSparse_long nr, Su
     sm->nnz = nnz;
 
     sm->val = 0;
-    sm->colidx = (SuiteSparse_long*)malloc(nnz * sizeof(SuiteSparse_long));
+    sm->colidx = nnz > 0 ? (SuiteSparse_long*)malloc(nnz * sizeof(SuiteSparse_long)) : 0;
     sm->rowptr = (SuiteSparse_long*)malloc((nr + 1) * sizeof(SuiteSparse_long));
-    if (!sm->colidx || !sm->rowptr)
-    {
+    if ((nnz > 0 && !sm->colidx) || !sm->rowptr) {
         if(sm->colidx) { free(sm->colidx); sm->colidx=0; }
         if (sm->rowptr) { free(sm->rowptr); sm->rowptr = 0; }
         sm->nr = sm->nc = sm->nnz = -1;
         return -1;
     }
     return 0;
+}
+
+/* allocate val and colidx after allocating rowptr with splm_crsm_alloc_novalues(...,0) */
+SuiteSparse_long splm_crsm_alloc_rest(splm_crsm* sm, SuiteSparse_long nnz)
+{
+   if(sm->nr<0 || sm->nc<0 || 0==sm->rowptr)
+      return -1;
+
+   sm->nnz = nnz;
+
+   sm->val = (double*)malloc(nnz * sizeof(double));;
+   sm->colidx = (SuiteSparse_long*)malloc(nnz * sizeof(SuiteSparse_long));
+   if (!sm->val || !sm->colidx)
+   {
+      if (sm->val) { free(sm->val); sm->val = 0; }
+      if (sm->colidx) { free(sm->colidx); sm->colidx = 0; }
+      if (sm->rowptr) { free(sm->rowptr); sm->rowptr = 0; }
+      sm->nr = sm->nc = sm->nnz = -1;
+      return -1;
+   }
+   return 0;
 }
 
 /* free a sparse CRS matrix */
@@ -1383,7 +1403,6 @@ SuiteSparse_long splm_lmpar(SuiteSparse_long m, splm_ccsm* A, splm_ccsm* R, Suit
             //printf("start splm_SuiteSparseQR without rank estimation\n");
             nsing = splm_SuiteSparseQR(SPQR_ORDERING_BEST, tol_without_rank_estimation, m, 2, A, 0, b_exp, 0, &cmx, &R2, &perm2, 0, 0, 0, cc);
             //printf("finished splm_SuiteSparseQR\n");
-            force_rank_estimation = 0;
 
             if (nsing == m)
             {
@@ -1515,18 +1534,18 @@ freeall:
 *
 *     the function statement is
 *
-*  int64_t lmdif_sparse(int64_t n_obs, int64_t m_vars,
-*     int64_t(*fcn)(int64_t n_obs, int64_t m_vars, double *x, double *fvec, int64_t* iflag),
-*     int (*findJacobiNonzeroPattern)(int64_t n_obs, int64_t m_vars, splm_crsm* jac),
+*  int lmdif_sparse(int n_obs, int m_vars,
+*     int(*fcn)(int n_obs, int m_vars, double* x, double* fvec, int* iflag),
+*     int calculateJacobian(int n_obs, int m_vars, double* x, splm_crsm* jac, int* nfeval, int* iflag),
 *     double *x, double *fvec,
 *     double ftol, double xtol, double gtol,
-*     int64_t maxfev, double epsfcn, double mindeltax, int64_t forward_diff,
+*     int maxfev, double epsfcn, double mindeltax, int64_t forward_diff,
 *     double *diag,
-*     int64_t mode, double factor,
-*     int64_t force_rank_estimation_1,
-*     int64_t force_rank_estimation_2,
-*     int64_t nprint,
-*     int64_t* nfev)
+*     int mode, double factor,
+*     int force_rank_estimation_1,
+*     int force_rank_estimation_2,
+*     int nprint,
+*     int* nfev)
 *
 *     where
 *
@@ -1534,7 +1553,7 @@ freeall:
 *	  calculates the nonlinear functions whose sum of squares shall be minimized.
 *    fcn must be defined in the user calling program, and should be written as follows.
 *
-*    int64_t fcn(int64_t n_obs, int64_t m_vars, double *x, double *fvec, int64_t* iflag)
+*    int(*fcn)(int n_obs, int m_vars, double *x, double *fvec, int* iflag)
 *	  ----------
 *	  calculate the functions at x and
 *	  return this vector in fvec.
@@ -1544,20 +1563,9 @@ freeall:
 *	  the user wants to terminate execution of lmdif.
 *	  in this case set iflag to a negative integer.
 *
-*  findJacobiNonzeroPattern is the name of the user-supplied subroutine which
-*    stores into 'jac' the positions of the jacobi matrix of the function fcn() where
-*    might be nonzero values for some function parameters x. It must be written
-*    as follows.
-*  int (*findJacobiNonzeroPattern)(int64_t n_obs, int64_t m_vars, splm_crsm* jac)
-*    This function must first calculate the number 'nnz' of possibly nonzero values of the
-*    jacobian. Then is must call splm_crsm_alloc_novalues(jac, n_obs, m_vars, nnz)
-*    in order to allocate memory for jac except for the memory for jac->val .
-*    Finally, findJacobiNonzeroPattern must fill the arrays jac->colidx[] and
-*    jac->rowptr[] so that they describe the nonzero elements of the jacobi.
-*    findJacobiNonzeroPattern() must return nonzero on error and zero if no error occured.
-*  The function findJacobiNonzeroPattern() is called from within lmdif_sparse(), and
-*    the memory that findJacobiNonzeroPattern() must reserve via splm_crsm_alloc_novalues()
-*    will be freed later within lmdif_sparse().
+*  int calculateJacobian(int n_obs, int m_vars, double* x, splm_crsm* jac, int* nfeval, int* iflag)
+*    name of the user-supplied function which calculate the numerical values of the jacobian, i.e. it must also fill
+*    jac->val[].
 *
 *	n_obs is a positive integer input variable set to the number
 *	  of functions.
@@ -1702,7 +1710,7 @@ freeall:
 
 int lmdif_sparse(int n_obs, int m_vars,
     int(*fcn)(int n_obs, int m_vars, double *x, double *fvec, int* iflag),
-    int (*findJacobiNonzeroPattern)(int n_obs, int m_vars, splm_crsm* jac),
+    int (*calculateJacobian)(int n_obs, int m_vars, double *x, splm_crsm* jac, int* nfeval, int* iflag),
     double *x, double *fvec,
     double ftol, double xtol, double gtol,
     int maxfev, double epsfcn, double mindeltax, int forward_diff,
@@ -1771,7 +1779,7 @@ int lmdif_sparse(int n_obs, int m_vars,
     {
         return 0;   /* do not call cholmod_l_finish(), do not goto freeall */
     }
-    if (2 == mode)
+    if (2 == mode && 0 != diag)
     { /* scaling by diag[] */
         for (j = 0; j < m_vars; j++)
         {
@@ -1824,20 +1832,6 @@ int lmdif_sparse(int n_obs, int m_vars,
     if (0 == (wa4 = (double*)malloc(sizeof(double) * n_obs)))
         goto freeall;
 
-    if((*findJacobiNonzeroPattern)(n_obs, m_vars, &tmp_crsm))
-    {
-        goto freeall;
-    }
-    if (splm_ccsm_alloc(&fjac, n_obs, m_vars, tmp_crsm.nnz))
-    {
-        goto freeall;
-    }
-    if (splm_crsm2ccsm(&tmp_crsm, &fjac))
-    {
-        goto freeall;
-    }
-    splm_crsm_free(&tmp_crsm);
-
     /*
     *     evaluate the function at the starting point
     *     and calculate its norm.
@@ -1867,10 +1861,21 @@ int lmdif_sparse(int n_obs, int m_vars,
         */
         iflag = 2;
 
-        if (splm_intern_fdif_jac(x, &fjac, n_obs, m_vars, epsfcn, mindeltax, fcn, forward_diff, nfev, &iflag))
+        splm_crsm_init_invalid(&tmp_crsm);
+        if((*calculateJacobian)(n_obs, m_vars, x, &tmp_crsm, nfev, &iflag))
         {
             goto freeall;  /* error in splm_intern_fdif_jac */
         }
+        splm_ccsm_free(&fjac); // no problem if fjac not already allocated (because splm_ccsm_init_invalid(&fjac) has been executed)
+        if (splm_ccsm_alloc(&fjac, n_obs, m_vars, tmp_crsm.nnz))
+        {
+           goto freeall;
+        }
+        if (splm_crsm2ccsm(&tmp_crsm, &fjac))
+        {
+           goto freeall;
+        }
+        splm_crsm_free(&tmp_crsm);
 
         if (iflag < 0)
             goto freeall;

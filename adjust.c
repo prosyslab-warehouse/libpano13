@@ -48,7 +48,7 @@
 #include "levmar.h"
 /* the sparse Levenberg Marquardt needs some more variables
    for backward compatibility add them here and not to the public headers
-   because they are only used in function findJacobiNonzeroPattern */
+   because they are only used in function calculateJacobian */
 struct SparseOptVars {
     optVars n;
     int nn[24];
@@ -2164,349 +2164,285 @@ void heapsort_int(int* arr, size_t arr_size)
     }
 }
 
-int findJacobiNonzeroPattern(int nobs, int nvars, splm_crsm * jac)
+#define CALC_JACOBIAN_PROCESS_IMAGE(var)                                                   \
+    if ((k = optInfo->opt[i].var) > 0) {                                                   \
+       if (k == 1) {                                                                       \
+          sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.var = j++;                         \
+       }                                                                                   \
+       else if (sparseOptInfo[k - 2].n.var >= 0)                                           \
+       {                                                                                   \
+          sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.var = sparseOptInfo[k - 2].n.var;  \
+       }                                                                                   \
+    }
+
+int calculateJacobian(int nobs, int nvars, double* x, splm_crsm* jac, int* nfeval, int* iflag)
 {
-    int i, j, k, n, im1, im2, i1, i2, nincp;
-    int64_t *colidx, *rowptr;
+   int i, j, n, im1, im2, i1, i2;
+   int64_t* colidx, * rowptr, k, k2, ncpeval = 0;
+   double fv0[2], fv[2];
+   double junk;
+   double junk2[2];
+   double original_avgfovFromSAP;
+   
+   const double eps = sqrt(DBL_EPSILON);
+   double p0, d;
 
-    j = 0;
-    for (i = 0; i < optInfo->numIm; i++) {
+   j = 0;
+   for (i = 0; i < optInfo->numIm; i++) {
+   
+       n = 0;
+                            
+       /*  0 */ CALC_JACOBIAN_PROCESS_IMAGE(yaw);
+       /*  1 */ CALC_JACOBIAN_PROCESS_IMAGE(pitch);
+       /*  2 */ CALC_JACOBIAN_PROCESS_IMAGE(roll);
 
-        n = 0;
+       /*  3 */ CALC_JACOBIAN_PROCESS_IMAGE(hfov);
 
-        /* 0 */
-        if ((k = optInfo->opt[i].yaw) > 0) {
-            if (k == 1) {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.yaw = j++;
-            }
-            else if(sparseOptInfo[k - 2].n.yaw >= 0)
-            {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.yaw = sparseOptInfo[k - 2].n.yaw;
-            }
-        }
-        /* 1 */
-        if ((k = optInfo->opt[i].pitch) > 0) {
-            if (k == 1) {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.pitch = j++;
-            }
-            else if(sparseOptInfo[k - 2].n.pitch >= 0)
-            {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.pitch = sparseOptInfo[k - 2].n.pitch;
-            }
-        }
-        /* 2 */
-        if ((k = optInfo->opt[i].roll) > 0) {
-            if (k == 1) {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.roll = j++;
-            }
-            else if(sparseOptInfo[k - 2].n.roll >= 0)
-            {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.roll = sparseOptInfo[k - 2].n.roll;
-            }
-        }
-        /* 3 */
-        if ((k = optInfo->opt[i].hfov) > 0) {
-            if (k == 1) {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.hfov = j++;
-            }
-            else if(sparseOptInfo[k - 2].n.hfov >= 0)
-            {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.hfov = sparseOptInfo[k - 2].n.hfov;
-            }
-        }
-        /* 4 */
-        if ((k = optInfo->opt[i].a) > 0) {
-            if (k == 1) {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.a = j++;
-            }
-            else if(sparseOptInfo[k - 2].n.a >= 0)
-            {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.a = sparseOptInfo[k - 2].n.a;
-            }
-        }
-        /* 5 */
-        if ((k = optInfo->opt[i].b) > 0) {
-            if (k == 1) {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.b = j++;
-            }
-            else if(sparseOptInfo[k - 2].n.b >= 0)
-            {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.b = sparseOptInfo[k - 2].n.b;
-            }
-        }
-        /* 6 */
-        if ((k = optInfo->opt[i].c) > 0) {
-            if (k == 1) {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.c = j++;
-            }
-            else if(sparseOptInfo[k - 2].n.c >= 0)
-            {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.c = sparseOptInfo[k - 2].n.c;
-            }
-        }
-        /* 7 */
-        if ((k = optInfo->opt[i].d) > 0) {
-            if (k == 1) {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.d = j++;
-            }
-            else if(sparseOptInfo[k - 2].n.d >= 0)
-            {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.d = sparseOptInfo[k - 2].n.d;
-            }
-        }
-        /* 8 */
-        if ((k = optInfo->opt[i].e) > 0) {
-            if (k == 1) {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.e = j++;
-            }
-            else if(sparseOptInfo[k - 2].n.e >= 0)
-            {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.e = sparseOptInfo[k - 2].n.e;
-            }
-        }
-        /* 9 */
-        if ((k = optInfo->opt[i].tiltXopt) > 0) {
-            if (k == 1) {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.tiltXopt = j++;
-            }
-            else if(sparseOptInfo[k - 2].n.tiltXopt >= 0)
-            {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.tiltXopt = sparseOptInfo[k - 2].n.tiltXopt;
-            }
-        }
-        /* 10 */
-        if ((k = optInfo->opt[i].tiltYopt) > 0) {
-            if (k == 1) {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.tiltYopt = j++;
-            }
-            else if(sparseOptInfo[k - 2].n.tiltYopt >= 0)
-            {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.tiltYopt = sparseOptInfo[k - 2].n.tiltYopt;
-            }
-        }
-        /* 11 */
-        if ((k = optInfo->opt[i].tiltZopt) > 0) {
-            if (k == 1) {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.tiltZopt = j++;
-            }
-            else if(sparseOptInfo[k - 2].n.tiltZopt >= 0)
-            {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.tiltZopt = sparseOptInfo[k - 2].n.tiltZopt;
-            }
-        }
-        /* 12 */
-        if ((k = optInfo->opt[i].tiltScaleOpt) > 0) {
-            if (k == 1) {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.tiltScaleOpt = j++;
-            }
-            else if(sparseOptInfo[k - 2].n.tiltScaleOpt >= 0)
-            {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.tiltScaleOpt = sparseOptInfo[k - 2].n.tiltScaleOpt;
-            }
-        }
-        /* 13 */
-        if ((k = optInfo->opt[i].transXopt) > 0) {
-            if (k == 1) {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.transXopt = j++;
-            }
-            else if(sparseOptInfo[k - 2].n.transXopt >= 0)
-            {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.transXopt = sparseOptInfo[k - 2].n.transXopt;
-            }
-        }
-        /* 14 */
-        if ((k = optInfo->opt[i].transYopt) > 0) {
-            if (k == 1) {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.transYopt = j++;
-            }
-            else if(sparseOptInfo[k - 2].n.transYopt >= 0)
-            {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.transYopt = sparseOptInfo[k - 2].n.transYopt;
-            }
-        }
-        /* 15 */
-        if ((k = optInfo->opt[i].transZopt) > 0) {
-            if (k == 1) {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.transZopt = j++;
-            }
-            else if(sparseOptInfo[k - 2].n.transZopt >= 0)
-            {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.transZopt = sparseOptInfo[k - 2].n.transZopt;
-            }
-        }
-        /* 16 */
-        if ((k = optInfo->opt[i].transYawOpt) > 0) {
-            if (k == 1) {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.transYawOpt = j++;
-            }
-            else if(sparseOptInfo[k - 2].n.transYawOpt >= 0)
-            {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.transYawOpt = sparseOptInfo[k - 2].n.transYawOpt;
-            }
-        }
-        /* 17 */
-        if ((k = optInfo->opt[i].transPitchOpt) > 0) {
-            if (k == 1) {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.transPitchOpt = j++;
-            }
-            else if(sparseOptInfo[k - 2].n.transPitchOpt >= 0)
-            {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.transPitchOpt = sparseOptInfo[k - 2].n.transPitchOpt;
-            }
-        }
-        /* 18 */
-        if ((k = optInfo->opt[i].testP0opt) > 0) {
-            if (k == 1) {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.testP0opt = j++;
-            }
-            else if(sparseOptInfo[k - 2].n.testP0opt >= 0)
-            {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.testP0opt = sparseOptInfo[k - 2].n.testP0opt;
-            }
-        }
-        /* 19 */
-        if ((k = optInfo->opt[i].testP1opt) > 0) {
-            if (k == 1) {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.testP1opt = j++;
-            }
-            else if(sparseOptInfo[k - 2].n.testP1opt >= 0)
-            {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.testP1opt = sparseOptInfo[k - 2].n.testP1opt;
-            }
-        }
-        /* 20 */
-        if ((k = optInfo->opt[i].testP2opt) > 0) {
-            if (k == 1) {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.testP2opt = j++;
-            }
-            else if(sparseOptInfo[k - 2].n.testP2opt >= 0)
-            {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.testP2opt = sparseOptInfo[k - 2].n.testP2opt;
-            }
-        }
-        /* 21 */
-        if ((k = optInfo->opt[i].testP3opt) > 0) {
-            if (k == 1) {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.testP3opt = j++;
-            }
-            else if(sparseOptInfo[k - 2].n.testP3opt >= 0)
-            {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.testP3opt = sparseOptInfo[k - 2].n.testP3opt;
-            }
-        }
+       /*  4 */ CALC_JACOBIAN_PROCESS_IMAGE(a);
+       /*  5 */ CALC_JACOBIAN_PROCESS_IMAGE(b);
+       /*  6 */ CALC_JACOBIAN_PROCESS_IMAGE(c);
+       /*  7 */ CALC_JACOBIAN_PROCESS_IMAGE(d);
+       /*  8 */ CALC_JACOBIAN_PROCESS_IMAGE(e);
 
-        /* 22 */
-        if ((k = optInfo->opt[i].shear_x) > 0) {
-            if (k == 1) {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.shear_x = j++;
+       // Tilt
+       /*  9 */ CALC_JACOBIAN_PROCESS_IMAGE(tiltXopt);
+       /* 10 */ CALC_JACOBIAN_PROCESS_IMAGE(tiltYopt);
+       /* 11 */ CALC_JACOBIAN_PROCESS_IMAGE(tiltZopt);
+       /* 12 */ CALC_JACOBIAN_PROCESS_IMAGE(tiltScaleOpt);
+
+       // Trans
+       /* 13 */ CALC_JACOBIAN_PROCESS_IMAGE(transXopt);
+       /* 14 */ CALC_JACOBIAN_PROCESS_IMAGE(transYopt);
+       /* 15 */ CALC_JACOBIAN_PROCESS_IMAGE(transZopt);
+       /* 16 */ CALC_JACOBIAN_PROCESS_IMAGE(transYawOpt);
+       /* 17 */ CALC_JACOBIAN_PROCESS_IMAGE(transPitchOpt);
+
+       // Test
+       /* 18 */ CALC_JACOBIAN_PROCESS_IMAGE(testP0opt);
+       /* 19 */ CALC_JACOBIAN_PROCESS_IMAGE(testP1opt);
+       /* 20 */ CALC_JACOBIAN_PROCESS_IMAGE(testP2opt);
+       /* 21 */ CALC_JACOBIAN_PROCESS_IMAGE(testP3opt);
+
+       /* 22 */ CALC_JACOBIAN_PROCESS_IMAGE(shear_x);
+       /* 23 */ CALC_JACOBIAN_PROCESS_IMAGE(shear_y);
+       /* 24 */
+   
+       sparseOptInfo[i].nnz = n;
+       heapsort_int(sparseOptInfo[i].nn, n);
+   }
+   
+   // Here the following holds:
+   // For an image with number i the structure sparseOptInfo[i] contains the following :
+   // sparseOptInfo[i].nnz is the number of array elements of the arries sparseOptInfo[i].pp[] and sparseOptInfo[i].nn[] that are initialized,
+   // i.e.
+   // sparseOptInfo[i].pp[0] ....sparseOptInfo[i].pp[sparseOptInfo[i].nnz - 1]
+   // and
+   // sparseOptInfo[i].nn[0] ....sparseOptInfo[i].nn[sparseOptInfo[i].nnz - 1]
+   // contain usable values.
+   //
+   //  When n >= 0 and n < sparseOptInfo[i].nnz  the following holds :
+   //  sparseOptInfo[i].pp[n] is the parameter name(from enum ParamNameInImage) with index n that the image i is dependend on.
+   //  sparseOptInfo[i].nn[n] is the index for the array x[] so that the parameter sparseOptInfo[i].pp[n] is stored in x[sparseOptInfo[i].nn[n]]
+   //  sparseOptInfo[i].n.NAME (where NAME is one of yaw, pitch, ....) is the index for the array x[] so that the parameter NAME in image i is stored in x[sparseOptInfo[i].n.NAME]
+
+   if (nobs < fcnPanoNperCP * optInfo->numPts || nvars != j) {
+       exit(1);  /* internal error */
+   }
+   
+   if(splm_crsm_alloc_novalues(jac, nobs, nvars, 0)) {
+      return -1;
+   }
+   rowptr = jac->rowptr;
+
+   k = 0;
+   for (j = 0; j < optInfo->numPts; ++j) {
+      rowptr[fcnPanoNperCP * j] = k;
+
+      im1 = optInfo->cpt[j].num[0];
+      im2 = optInfo->cpt[j].num[1];
+      i1 = 0;
+      i2 = 0;
+   
+      while (i1 < sparseOptInfo[im1].nnz && i2 < sparseOptInfo[im2].nnz) {
+         if (sparseOptInfo[im1].nn[i1] <= sparseOptInfo[im2].nn[i2]) {
+               if (sparseOptInfo[im1].nn[i1] == sparseOptInfo[im2].nn[i2]) {
+                  ++i2;
+               }
+               ++i1;
+         }
+         else {
+               ++i2;
+         }
+         k++;
+      }
+      while (i1 < sparseOptInfo[im1].nnz) {
+         k++;
+         i1++;
+      }
+      while (i2 < sparseOptInfo[im2].nnz) {
+         k++;
+         i2++;
+      }
+
+      if(fcnPanoNperCP == 2)
+      {
+         rowptr[fcnPanoNperCP * j + 1] = k;
+         k += (k - rowptr[fcnPanoNperCP * j]);
+      }
+   }
+   
+   for (j = fcnPanoNperCP * optInfo->numPts; j < nobs; j++) {
+      rowptr[j] = k;
+   }
+
+   rowptr[nobs] = k;
+
+   if (splm_crsm_alloc_rest(jac, k)) {
+       return -1;
+   } 
+   colidx = jac->colidx;
+
+   if (needInitialAvgFov) {
+      initialAvgFov = avgfovFromSAP;
+      needInitialAvgFov = 0;
+      if (adjustLogFile != 0) {
+         fprintf(adjustLogFile, "setting initialAvgFov = %g\n", initialAvgFov);
+         fflush(adjustLogFile);
+      }
+   }
+   original_avgfovFromSAP = avgfovFromSAP;
+
+   k = 0;
+   for(j = 0; j < optInfo->numPts; j++)
+   {
+       SetAlignParams(x);
+       ncpeval++;
+       if (fcnPanoNperCP == 1) {
+          EvaluateControlPointErrorAndComponents(j, &fv0[0], &junk2[0]);
+       }
+       else {
+          EvaluateControlPointErrorAndComponents(j, &junk, &fv0[0]);
+          if (fcnPanoHuberSigma) {
+             fv0[0] = huber(fv0[0], fcnPanoHuberSigma);
+             fv0[1] = huber(fv0[1], fcnPanoHuberSigma);
+          }
+       }
+
+       // Field-of-view stabilization. Must be carried out in the same way
+       // as in fcnPano so that the derivatives are scaled by the same
+       // factor as the function values.
+
+       if (initialAvgFov > avgfovFromSAP) {
+          fv0[0] *= initialAvgFov / avgfovFromSAP;
+       }
+
+       k = rowptr[fcnPanoNperCP * j];
+       if (fcnPanoNperCP == 2) {
+          k2 = rowptr[fcnPanoNperCP * j + 1];
+          if (initialAvgFov > avgfovFromSAP) {
+             fv0[1] *= initialAvgFov / avgfovFromSAP;
+          }
+       }
+
+       im1 = optInfo->cpt[j].num[0];
+       im2 = optInfo->cpt[j].num[1];
+       i1 = 0;
+       i2 = 0;
+
+       // In the following loop the array elements x[i] are used on that the control point errors are dependent.
+       // The elements x[i] are accessed so that the indices i are increasing. 
+       // The arrays sparseOptInfo[im1].nn[] and sparseOptInfo[im2].nn[] are sorted (with heapsort, see above).
+       // In each pass of the following loop is ensured that the next greater index i for the array x[i] is used -
+       // either by i = sparseOptInfo[im1].nn[i1] or by i = sparseOptInfo[im2].nn[i2] or by both if they are equal.
+       // Thereby is ensured that if the parameters in both images are dependend on x[i] they are also changed
+       // in both images (in this case two calls of ChangeAlignParamInImage() are done).
+
+       while (i1 < sparseOptInfo[im1].nnz || i2 < sparseOptInfo[im2].nnz) {
+          if (i1 >= sparseOptInfo[im1].nnz) {
+              i = sparseOptInfo[im2].nn[i2];
+              ++i2;
+          }
+          else {
+              if (i2 >= sparseOptInfo[im2].nnz) {
+                  i = sparseOptInfo[im1].nn[i1];
+                  ++i1;
+              }
+              else {
+                  if (sparseOptInfo[im1].nn[i1] <= sparseOptInfo[im2].nn[i2]) {
+                      i = sparseOptInfo[im1].nn[i1];
+                      if (sparseOptInfo[im1].nn[i1] == sparseOptInfo[im2].nn[i2]) {
+                          ++i2;
+                      };
+                      ++i1;
+                  }
+                  else {
+                      i = sparseOptInfo[im2].nn[i2];
+                      ++i2;
+                  }
+              }
+          };
+
+          p0 = x[i];
+          d = fabs(eps * p0);
+          if (d == 0) {
+              d = eps;
+          };
+          x[i] += d;
+          SetAlignParams(x);
+
+          ncpeval++;
+          if (fcnPanoNperCP == 1) {
+             EvaluateControlPointErrorAndComponents(j, &fv[0], &junk2[0]);
+          }
+          else {
+             EvaluateControlPointErrorAndComponents(j, &junk, &fv[0]);
+             if (fcnPanoHuberSigma) {
+                fv[0] = huber(fv[0], fcnPanoHuberSigma);
+                fv[1] = huber(fv[1], fcnPanoHuberSigma);
+             }
+          }
+
+          // Field-of-view stabilization. Must be carried out in the same way
+          // as in fcnPano so that the derivatives are scaled by the same
+          // factor as the function values.
+
+          if (initialAvgFov > avgfovFromSAP) {
+             fv[0] *= initialAvgFov / avgfovFromSAP;
+          }
+          if (fcnPanoNperCP == 2) {
+            if (initialAvgFov > avgfovFromSAP) {
+                fv[1] *= initialAvgFov / avgfovFromSAP;
             }
-            else if(sparseOptInfo[k - 2].n.shear_x >= 0)
-            {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.shear_x = sparseOptInfo[k - 2].n.shear_x;
-            }
-        }
+          }
 
-        /* 23 */
-        if ((k = optInfo->opt[i].shear_y) > 0) {
-            if (k == 1) {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.shear_y = j++;
-            }
-            else if(sparseOptInfo[k - 2].n.shear_y >= 0)
-            {
-                sparseOptInfo[i].nn[n++] = sparseOptInfo[i].n.shear_y = sparseOptInfo[k - 2].n.shear_y;
-            }
-        }
+          jac->val[k] = (fv[0] - fv0[0]) / d;
+          colidx[k++] = i;
+          if(fcnPanoNperCP == 2) {
+             jac->val[k2] = (fv[1] - fv0[1]) / d;
+             colidx[k2++] = i;
+          }
 
-        /* 24 */
+          // reset parameter
+          x[i] = p0;
 
-        sparseOptInfo[i].nnz = n;
-        heapsort_int(sparseOptInfo[i].nn, n);
-    }
+          /* Although avgfovFromSAP will be approximately (up to roundoff errors) equal to
+          *  original_avgfovFromSAP here, it is set to original_avgfovFromSAP in the following
+          *  in order to avoid accumulated roundoff errors in avgfovFromSAP .
+          */
+          avgfovFromSAP = original_avgfovFromSAP;
+       }
+   }
+  
+   /* nfeval should be increased by the number of evaluations of the function fcnPano().
+    * Since calculateJacobian() does not calculate the whole function vector at once, the
+    * equivalent fcnPano() evaluations are approximated by the number of control point
+    * error calculations divided by the number of control points.
+    */
+   *nfeval += (ncpeval + optInfo->numPts - 1) / optInfo->numPts;
 
-    if (nobs < fcnPanoNperCP * optInfo->numPts /* + optInfo->nr_var_constraints */ || nvars != j) {
-        exit(1);  /* internal error */
-    }
-
-    for (j = k = 0; j < optInfo->numPts; ++j) {
-        for (nincp = 0; nincp < fcnPanoNperCP; nincp++) {
-            im1 = optInfo->cpt[j].num[0];
-            im2 = optInfo->cpt[j].num[1];
-            i1 = 0;
-            i2 = 0;
-
-            while (i1 < sparseOptInfo[im1].nnz && i2 < sparseOptInfo[im2].nnz) {
-                if (sparseOptInfo[im1].nn[i1] <= sparseOptInfo[im2].nn[i2]) {
-                    if (sparseOptInfo[im1].nn[i1] == sparseOptInfo[im2].nn[i2]) {
-                        ++i2;
-                    }
-                    ++i1;
-                }
-                else {
-                    ++i2;
-                }
-                k++;
-            }
-            while (i1 < sparseOptInfo[im1].nnz) {
-                k++;
-                i1++;
-            }
-            while (i2 < sparseOptInfo[im2].nnz) {
-                k++;
-                i2++;
-            }
-        }
-    }
-
-    if (nobs > fcnPanoNperCP * optInfo->numPts) {
-        k += nvars * (nobs - (fcnPanoNperCP * optInfo->numPts));
-    }
-
-    if(splm_crsm_alloc_novalues(jac, nobs, nvars, k))
-        return -1;
-
-    colidx = jac->colidx;
-    rowptr = jac->rowptr;
-
-    for (j = k = 0; j < optInfo->numPts; ++j) {
-        for (nincp = 0; nincp < fcnPanoNperCP; nincp++) {
-            rowptr[fcnPanoNperCP*j + nincp] = k;
-
-            im1 = optInfo->cpt[j].num[0];
-            im2 = optInfo->cpt[j].num[1];
-            i1 = 0;
-            i2 = 0;
-
-            while (i1 < sparseOptInfo[im1].nnz && i2 < sparseOptInfo[im2].nnz) {
-                if (sparseOptInfo[im1].nn[i1] <= sparseOptInfo[im2].nn[i2]) {
-                    i = sparseOptInfo[im1].nn[i1];
-                    if (sparseOptInfo[im1].nn[i1] == sparseOptInfo[im2].nn[i2])
-                        ++i2;
-                    ++i1;
-                }
-                else {
-                    i = sparseOptInfo[im2].nn[i2];
-                    ++i2;
-                }
-                colidx[k++] = i;
-            }
-            while (i1 < sparseOptInfo[im1].nnz)
-                colidx[k++] = sparseOptInfo[im1].nn[i1++];
-            while (i2 < sparseOptInfo[im2].nnz)
-                colidx[k++] = sparseOptInfo[im2].nn[i2++];
-        }
-    }
-
-    for (j = fcnPanoNperCP * optInfo->numPts; j < nobs; j++) {
-        rowptr[j] = k;
-        for(i1 = 0; i1 < nvars; i1++) {
-            colidx[k++] = i1;
-        }
-    }
-
-    rowptr[nobs] = k;
-
-    return 0;
+   return 0;
 }
+
 #endif
 
 int fcnPano(int m, int n, double x[], double fvec[], int *iflag)
@@ -2538,7 +2474,11 @@ int fcnPano(int m, int n, double x[], double fvec[], int *iflag)
                         {
                                 result += fvec[i]*fvec[i] ;
                         }
+#ifdef USE_SPARSE_LEVENBERG_MARQUARDT
+                        result = sqrt(result / (double)(optInfo->numPts)); // to approximate total distance vs dx, dy
+#else
                         result = sqrt( result/ (double)m ) * sqrt((double)fcnPanoNperCP); // to approximate total distance vs dx, dy
+#endif
                         fprintf(adjustLogFile,"At iflag=-99 (dispose), NperCP=%d, m=%d, n=%d, err = %g, x= \n",
                                               fcnPanoNperCP,m,n,result);
                         for (i=0; i<n; i++) {
@@ -2565,7 +2505,11 @@ int fcnPano(int m, int n, double x[], double fvec[], int *iflag)
                 {
                         result += fvec[i]*fvec[i] ;
                 }
+#ifdef USE_SPARSE_LEVENBERG_MARQUARDT
+                result = sqrt(result / (double)(optInfo->numPts)); // to approximate total distance vs dx, dy
+#else
                 result = sqrt( result/ (double)m ) * sqrt((double)fcnPanoNperCP); // to approximate total distance vs dx, dy
+#endif
 
                 snprintf( message, sizeof(message)-1, "Strategy %d\nAverage (rms) distance between Controlpoints \nafter %d iteration(s): %25.15g units", getFcnPanoNperCP(), numIt,result);//average);
                 numIt += 1; // 10;
@@ -2658,7 +2602,11 @@ int fcnPano(int m, int n, double x[], double fvec[], int *iflag)
         }
         result = sqrt(result/(double)iresult);
         for (i=iresult; i < m; i++) {
+#ifdef USE_SPARSE_LEVENBERG_MARQUARDT
+                fvec[i] = 0;
+#else
                 fvec[i] = result;
+#endif
         }
 
         if (adjustLogFile != 0) {
