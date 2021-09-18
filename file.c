@@ -172,7 +172,6 @@ size_t panoPSDPICTResourceWrite(file_spec fnum, unsigned char resource, unsigned
     return ftell(fnum) - startLocation;
 }
 
-#define CREATED_BY_PSD "Panotools " PTVERSIONBIT " " VERSION
 #define IPTC_VERSION_ID 0
 #define IPTC_DATE_CREATED_ID 0x37
 #define IPTC_TIME_CREATED_ID 0x3C
@@ -234,10 +233,6 @@ size_t panoPSDResourcesBlockWrite(Image *im, file_spec   fnum)
         IPTCVersion[1] = 2;
         IPTCVersion[2] = 0;
         panoPSDPICTResourceWrite(fnum, 0x02, IPTC_VERSION_ID, 2, IPTCVersion);
-
-        // Must not exceed 32 char by IPTC standard.
-        descLength = (short)min( 32, strlen(CREATED_BY_PSD) );
-        panoPSDPICTResourceWrite(fnum, 0x02, IPTC_DESCRIPTION_WRITER_ID, descLength, CREATED_BY_PSD );
 
         if(im->metadata.imageDescription)
         {
